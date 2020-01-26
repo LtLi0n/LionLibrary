@@ -27,11 +27,9 @@ namespace LionLibrary
         protected RestEntity() { }
 
         public RestEntity(
-            KeyT id, 
             ConnectorServiceBase connector, 
             ApiConnectorCRUDBase<EntityT, KeyT> connectorCrud)
         {
-            Id = id;
             Connector = connector;
             ConnectorCRUD = connectorCrud;
         }

@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 namespace LionLibrary
 {
     [DataContract]
-    public abstract class PaginatedListBase<EntityT, KeyT> : IPaginatedList<EntityT, KeyT>
+    public abstract class PaginatedListBase<EntityT, KeyT> : 
+        IPaginatedList<EntityT, KeyT>
         where EntityT : class, IEntity<EntityT, KeyT>
         where KeyT : notnull, IEquatable<KeyT>, IComparable
     {
         [DataMember]
-        public IEnumerable<EntityT> Items { get; protected set; }
+        public IEnumerable<EntityT> Entities { get; protected set; }
 
         [DataMember]
         public int Count { get; protected set; }
@@ -29,13 +30,21 @@ namespace LionLibrary
         ///<summary>Get raised when the contents of the paginator are changed</summary>
         public event EventHandler<PaginatorUpdateEventArgs<EntityT, KeyT>>? PageUpdate;
 
+        public PaginatedListBase()
+        {
+            Entities = Enumerable.Empty<EntityT>();
+            Count = 0;
+            PageIndex = 1;
+            TotalPages = 1;
+        }
+
         public PaginatedListBase(IEnumerable<EntityT> items, int count, int pageIndex, int pageSize)
         {
+            Entities = items;
             Count = count;
             PageIndex = pageIndex;
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
             if (TotalPages == 0) TotalPages = 1;
-            Items = items;
         }
 
         public async Task PullPageAsync(
@@ -78,20 +87,20 @@ namespace LionLibrary
         {
             if (paginator != null)
             {
-                Items = paginator.Items;
+                Entities = paginator.Entities;
                 PageIndex = paginator.PageIndex;
                 Count = paginator.Count;
                 TotalPages = paginator.TotalPages;
             }
             else
             {
-                Items = Enumerable.Empty<EntityT>();
+                Entities = Enumerable.Empty<EntityT>();
                 PageIndex = 1;
                 Count = 0;
                 TotalPages = 1;
             }
 
-            PageUpdate?.Invoke(this, new PaginatorUpdateEventArgs<EntityT, KeyT>(this));
+            PageUpdate?.Invoke(this, new PaginatorUpdateEventArgs<EntityT, KeyT>(paginator));
         }
 
         public abstract Task<IPaginatedList<EntityT, KeyT>?> GetPaginatorAsync(
