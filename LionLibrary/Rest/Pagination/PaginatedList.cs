@@ -12,6 +12,8 @@ namespace LionLibrary
         where EntityT : class, IEntity<EntityT, KeyT>
         where KeyT : notnull, IEquatable<KeyT>, IComparable
     {
+        public PaginatedList() : base() { }
+
         public PaginatedList(IEnumerable<EntityT> items, int count, int pageIndex, int pageSize) :
             base(items, count, pageIndex, pageSize) { }
 

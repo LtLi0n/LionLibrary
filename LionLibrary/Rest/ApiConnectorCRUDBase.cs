@@ -64,9 +64,16 @@ namespace LionLibrary
         }
 
 
-        public Task<EntityT?> GetAsync(KeyT id, IList<EntityT>? cache = null) => GetAsync<EntityT>(id, cache);
+        public Task<EntityT?> GetAsync(
+            KeyT id, 
+            IList<EntityT>? cache = null, 
+            Action<EntityT>? initFunc = null) => 
+            GetAsync<EntityT>(id, cache, initFunc);
 
-        public async Task<T?> GetAsync<T>(KeyT id, IList<T>? cache = null)
+        public async Task<T?> GetAsync<T>(
+            KeyT id, 
+            IList<T>? cache = null, 
+            Action<T>? initFunc = null)
             where T : class, IEntity<EntityT, KeyT>
         {
             if (cache != null)
@@ -85,6 +92,7 @@ namespace LionLibrary
             {
                 var entity = JsonConvert.DeserializeObject<T>(response.Content);
                 cache?.Add(entity);
+                initFunc?.Invoke(entity);
                 return JsonConvert.DeserializeObject<T>(response.Content);
             }
             else
@@ -94,7 +102,31 @@ namespace LionLibrary
             }
         }
 
-        public async Task<PaginatedList<EntityT, KeyT>?> GetAsync(
+        public async Task<PaginatedList<EntityT, KeyT>> GetAsync(
+            ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> req,
+            int? page = null)
+        {
+            var request = req.Request;
+
+            if (page != null)
+            {
+                request.AddParameter("page", page.Value);
+            }
+
+            IRestResponse response = await Client.ExecuteTaskAsync(request).ConfigureAwait(false);
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                return JsonConvert.DeserializeObject<PaginatedList<EntityT, KeyT>>(response.Content);
+            }
+            else
+            {
+                Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
+                return new PaginatedList<EntityT, KeyT>();
+            }
+        }
+
+        public async Task<PaginatedList<EntityT, KeyT>> GetAsync(
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? reqExtras = null,
             int? page = null)
         {
@@ -117,11 +149,14 @@ namespace LionLibrary
             else
             {
                 Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
-                return null;
+                return new PaginatedList<EntityT, KeyT>();
             }
         }
 
-        public async Task<T?> GetAsyncWithRest<T>(KeyT id, IList<T>? cache = null)
+        public async Task<T?> GetAsyncWithRest<T>(
+            KeyT id, 
+            IList<T>? cache = null, 
+            Action<T>? initFunc = null)
             where T : RestEntity<EntityT, KeyT>, IEntity<EntityT, KeyT>
         {
             var entity = await GetAsync(id, cache).ConfigureAwait(false);
@@ -129,6 +164,7 @@ namespace LionLibrary
             {
                 entity.Connector = Connector;
                 entity.ConnectorCRUD = this;
+                initFunc?.Invoke(entity);
             }
             return entity;
         }

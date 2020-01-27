@@ -11,8 +11,8 @@ namespace LionLibrary
         where EntityT : class, IEntity<EntityT, KeyT>
         where KeyT : notnull, IEquatable<KeyT>, IComparable
     {
-        public ConnectorServiceBase? Connector { get; set; }
-        public ApiConnectorCRUDBase<EntityT, KeyT>? ConnectorCRUD { get; set; }
+        public ConnectorServiceBase Connector { get; set; }
+        public ApiConnectorCRUDBase<EntityT, KeyT> ConnectorCRUD { get; set; }
 
         [DataMember]
 #pragma warning disable CS8653 // If used If used with a serializer, this should never be null.
