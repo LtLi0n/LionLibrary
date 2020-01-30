@@ -27,6 +27,9 @@ namespace LionLibrary
         public bool HasPreviousPage => PageIndex > 1;
         public bool HasNextPage => PageIndex < TotalPages;
 
+        ///<summary>Get raised before the contents of the paginator are changed</summary>
+        public event EventHandler<PaginatorUpdateEventArgs<EntityT, KeyT>>? PrePageUpdate;
+
         ///<summary>Get raised when the contents of the paginator are changed</summary>
         public event EventHandler<PaginatorUpdateEventArgs<EntityT, KeyT>>? PageUpdate;
 
@@ -85,6 +88,10 @@ namespace LionLibrary
 
         private void SyncWith(IPaginatedList<EntityT, KeyT>? paginator)
         {
+            var args = new PaginatorUpdateEventArgs<EntityT, KeyT>(paginator);
+
+            PrePageUpdate?.Invoke(this, args);
+
             if (paginator != null)
             {
                 Entities = paginator.Entities;
@@ -100,7 +107,7 @@ namespace LionLibrary
                 TotalPages = 1;
             }
 
-            PageUpdate?.Invoke(this, new PaginatorUpdateEventArgs<EntityT, KeyT>(paginator));
+            PageUpdate?.Invoke(this, args);
         }
 
         public abstract Task<IPaginatedList<EntityT, KeyT>?> GetPaginatorAsync(

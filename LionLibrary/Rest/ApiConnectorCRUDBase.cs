@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Linq;
 
 using RestRequest = RestSharp.RestRequest;
+using System.Collections.Concurrent;
 
 namespace LionLibrary
 {
@@ -65,21 +66,20 @@ namespace LionLibrary
 
 
         public Task<EntityT?> GetAsync(
-            KeyT id, 
-            IList<EntityT>? cache = null, 
+            KeyT id,
+            ConcurrentDictionary<KeyT, EntityT>? cache = null, 
             Action<EntityT>? initFunc = null) => 
             GetAsync<EntityT>(id, cache, initFunc);
 
         public async Task<T?> GetAsync<T>(
             KeyT id, 
-            IList<T>? cache = null, 
+            ConcurrentDictionary<KeyT, T>? cache = null, 
             Action<T>? initFunc = null)
             where T : class, IEntity<EntityT, KeyT>
         {
             if (cache != null)
             {
-                var cacheEntity = cache.FirstOrDefault(x => Equals(x.Id, id));
-                if (cacheEntity != null)
+                if(cache.TryGetValue(id, out T? cacheEntity))
                 {
                     return cacheEntity;
                 }
@@ -91,7 +91,11 @@ namespace LionLibrary
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 var entity = JsonConvert.DeserializeObject<T>(response.Content);
-                cache?.Add(entity);
+                try
+                {
+                    cache?.TryAdd(entity.Id, entity);
+                }
+                catch { }
                 initFunc?.Invoke(entity);
                 return JsonConvert.DeserializeObject<T>(response.Content);
             }
@@ -155,7 +159,7 @@ namespace LionLibrary
 
         public async Task<T?> GetAsyncWithRest<T>(
             KeyT id, 
-            IList<T>? cache = null, 
+            ConcurrentDictionary<KeyT, T>? cache = null, 
             Action<T>? initFunc = null)
             where T : RestEntity<EntityT, KeyT>, IEntity<EntityT, KeyT>
         {
