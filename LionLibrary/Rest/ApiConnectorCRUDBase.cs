@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using NLog;
 using RestSharp;
-using RestSharp.Serializers.Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -10,6 +9,7 @@ using System.Linq;
 
 using RestRequest = RestSharp.RestRequest;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace LionLibrary
 {
@@ -28,12 +28,11 @@ namespace LionLibrary
             where T : IEntity<EntityT, KeyT>
         {
             RestRequest request = new RestRequest(Route, Method.POST) { RequestFormat = DataFormat.Json };
-            request.JsonSerializer = new NewtonsoftJsonSerializer();
             request.AddJsonBody(entity);
             //request.AddParameter("application/json", json, ParameterType.RequestBody);
             //request.AddParameter(new JsonParameter("", json));
 
-            var response = await Client.ExecuteTaskAsync<EntityT>(request).ConfigureAwait(false);
+            var response = await Client.ExecuteAsync<EntityT>(request).ConfigureAwait(false);
 
             if (response.StatusCode != HttpStatusCode.OK &&
                 response.StatusCode != HttpStatusCode.Created)
@@ -67,35 +66,50 @@ namespace LionLibrary
 
         public Task<EntityT?> GetAsync(
             KeyT id,
-            ConcurrentDictionary<KeyT, EntityT>? cache = null, 
-            Action<EntityT>? initFunc = null) => 
-            GetAsync<EntityT>(id, cache, initFunc);
+            IDictionary<KeyT, EntityT>? cache = null, 
+            Action<EntityT>? initFunc = null,
+            CancellationToken cancelToken = default) => 
+            GetAsync<EntityT>(id, cache, initFunc, cancelToken);
 
         public async Task<T?> GetAsync<T>(
-            KeyT id, 
-            ConcurrentDictionary<KeyT, T>? cache = null, 
-            Action<T>? initFunc = null)
+            KeyT id,
+            IDictionary<KeyT, T>? cache = null, 
+            Action<T>? initFunc = null,
+            CancellationToken cancelToken = default)
             where T : class, IEntity<EntityT, KeyT>
         {
-            if (cache != null)
+            SpinWait sw = new SpinWait();
+
+            while (cache != null)
             {
-                if(cache.TryGetValue(id, out T? cacheEntity))
+                if(cancelToken != default)
                 {
-                    return cacheEntity;
+                    if(cancelToken.IsCancellationRequested)
+                    {
+                        return null;
+                    }
                 }
+
+                try
+                {
+                    if (cache.TryGetValue(id, out T? cachedEntity))
+                    {
+                        return cachedEntity;
+                    }
+                }
+                catch(Exception) { }
+
+                sw.SpinOnce();
             }
 
             RestRequest request = new RestRequest($"{Route}/{id}", Method.GET);
-            IRestResponse response = await Client.ExecuteTaskAsync(request).ConfigureAwait(false);
+
+
+            IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 var entity = JsonConvert.DeserializeObject<T>(response.Content);
-                try
-                {
-                    cache?.TryAdd(entity.Id, entity);
-                }
-                catch { }
                 initFunc?.Invoke(entity);
                 return JsonConvert.DeserializeObject<T>(response.Content);
             }
@@ -117,7 +131,7 @@ namespace LionLibrary
                 request.AddParameter("page", page.Value);
             }
 
-            IRestResponse response = await Client.ExecuteTaskAsync(request).ConfigureAwait(false);
+            IRestResponse response = await Client.ExecuteAsync(request).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -144,7 +158,7 @@ namespace LionLibrary
                 request.AddParameter("page", page.Value);
             }
 
-            IRestResponse response = await Client.ExecuteTaskAsync(request).ConfigureAwait(false);
+            IRestResponse response = await Client.ExecuteAsync(request).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -158,12 +172,13 @@ namespace LionLibrary
         }
 
         public async Task<T?> GetAsyncWithRest<T>(
-            KeyT id, 
-            ConcurrentDictionary<KeyT, T>? cache = null, 
-            Action<T>? initFunc = null)
+            KeyT id,
+            IDictionary<KeyT, T>? cache = null, 
+            Action<T>? initFunc = null,
+            CancellationToken cancelToken = default)
             where T : RestEntity<EntityT, KeyT>, IEntity<EntityT, KeyT>
         {
-            var entity = await GetAsync(id, cache).ConfigureAwait(false);
+            var entity = await GetAsync(id, cache, initFunc, cancelToken).ConfigureAwait(false);
             if (entity != null)
             {
                 entity.Connector = Connector;
@@ -181,10 +196,9 @@ namespace LionLibrary
             where T : IEntity<EntityT, KeyT>
         {
             RestRequest request = new RestRequest($"{Route}/{key}", Method.PUT) { RequestFormat = DataFormat.Json };
-            request.JsonSerializer = new NewtonsoftJsonSerializer();
             request.AddJsonBody(entity);
 
-            var response = await Client.ExecuteTaskAsync(request).ConfigureAwait(false);
+            var response = await Client.ExecuteAsync(request).ConfigureAwait(false);
 
             if (response.StatusCode != HttpStatusCode.NoContent)
             {
@@ -200,7 +214,7 @@ namespace LionLibrary
         {
             RestRequest request = new RestRequest($"{Route}/{entityKey}", Method.DELETE);
 
-            var response = await Client.ExecuteTaskAsync(request).ConfigureAwait(false);
+            var response = await Client.ExecuteAsync(request).ConfigureAwait(false);
 
             if (response.StatusCode != HttpStatusCode.OK)
             {

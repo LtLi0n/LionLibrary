@@ -55,7 +55,7 @@ namespace LionLibrary
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null)
         {
-            IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page);
+            IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page).ConfigureAwait(false);
             SyncWith(paginator);
         }
 
@@ -71,7 +71,7 @@ namespace LionLibrary
             if (HasNextPage)
             {
                 PageIndex++;
-                await PullCurrentPageAsync(connector, config);
+                await PullCurrentPageAsync(connector, config).ConfigureAwait(false);
             };
         }
 
@@ -82,7 +82,7 @@ namespace LionLibrary
             if (HasPreviousPage)
             {
                 PageIndex--;
-                await PullCurrentPageAsync(connector, config);
+                await PullCurrentPageAsync(connector, config).ConfigureAwait(false);
             };
         }
 
