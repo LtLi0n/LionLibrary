@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using System.Linq;
+using System.Threading;
 
 using RestRequest = RestSharp.RestRequest;
-using System.Collections.Concurrent;
-using System.Threading;
 
 namespace LionLibrary
 {
@@ -28,9 +26,9 @@ namespace LionLibrary
             where T : IEntity<EntityT, KeyT>
         {
             RestRequest request = new RestRequest(Route, Method.POST) { RequestFormat = DataFormat.Json };
-            request.AddJsonBody(entity);
-            //request.AddParameter("application/json", json, ParameterType.RequestBody);
-            //request.AddParameter(new JsonParameter("", json));
+
+            string json = JsonConvert.SerializeObject(entity);
+            request.AddParameter("application/json", json, ParameterType.RequestBody);
 
             var response = await Client.ExecuteAsync<EntityT>(request).ConfigureAwait(false);
 
@@ -196,7 +194,8 @@ namespace LionLibrary
             where T : IEntity<EntityT, KeyT>
         {
             RestRequest request = new RestRequest($"{Route}/{key}", Method.PUT) { RequestFormat = DataFormat.Json };
-            request.AddJsonBody(entity);
+            string json = JsonConvert.SerializeObject(entity);
+            request.AddParameter("application/json", json, ParameterType.RequestBody);
 
             var response = await Client.ExecuteAsync(request).ConfigureAwait(false);
 
