@@ -224,6 +224,6 @@ namespace LionLibrary
         }
 
         public ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> CreateGetRequest() =>
-            new ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>(this, new RestRequest(Route, Method.GET));
+            new ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>(this, new RestRequest(Route, Method.GET, DataFormat.Json));
     }
 }
