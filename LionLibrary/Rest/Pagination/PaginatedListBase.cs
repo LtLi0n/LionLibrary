@@ -55,7 +55,7 @@ namespace LionLibrary
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null)
         {
-            IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page).ConfigureAwait(false);
+            IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page);
             SyncWith(paginator);
         }
 
