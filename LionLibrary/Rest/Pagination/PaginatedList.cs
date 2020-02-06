@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,7 +36,8 @@ namespace LionLibrary
         public override async Task<IPaginatedList<EntityT, KeyT>?> GetPaginatorAsync(
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null,
-            int? page = null) =>
-            await connector.GetAsync(config, page).ConfigureAwait(false);
+            int? page = null,
+            CancellationToken cancelToken = default) =>
+            await connector.GetAsync(config, page, cancelToken: cancelToken);
     }
 }

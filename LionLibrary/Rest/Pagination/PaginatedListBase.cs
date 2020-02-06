@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LionLibrary
@@ -33,6 +34,9 @@ namespace LionLibrary
         ///<summary>Get raised when the contents of the paginator are changed</summary>
         public event EventHandler<PaginatorUpdateEventArgs<EntityT, KeyT>>? PageUpdate;
 
+        public CancellationTokenSource CancellationTokenSource { get; private set; } = 
+            new CancellationTokenSource();
+
         public PaginatedListBase()
         {
             Entities = Enumerable.Empty<EntityT>();
@@ -47,57 +51,68 @@ namespace LionLibrary
             Count = count;
             PageIndex = pageIndex;
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
-            if (TotalPages == 0) TotalPages = 1;
+            
+            if (TotalPages == 0)
+            {
+                TotalPages = 1;
+            }
         }
 
-        public async Task PullPageAsync(
+        public async Task PullCurrentPageAsync(
+            ApiConnectorCRUDBase<EntityT, KeyT> connector,
+            Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null) =>
+            await PullPageAsync(PageIndex, connector, config).ConfigureAwait(false);
+
+        protected async Task PullPageAsync(
             int page,
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null)
         {
-            IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page);
-            SyncWith(paginator);
+            CancellationTokenSource.Cancel();
+            CancellationTokenSource = new CancellationTokenSource();
+
+            try
+            {
+                IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page, CancellationTokenSource.Token).ConfigureAwait(false);
+                UpdatePaginator(paginator);
+            }
+            catch(TaskCanceledException) { }
+            
         }
 
-        public Task PullCurrentPageAsync(
-            ApiConnectorCRUDBase<EntityT, KeyT> connector,
-            Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null) =>
-            PullPageAsync(PageIndex, connector, config);
-
-        public async Task GotoNextPageAsync(
+        protected async Task PullNextPageAsync(
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null)
         {
             if (HasNextPage)
             {
                 PageIndex++;
-                await PullCurrentPageAsync(connector, config).ConfigureAwait(false);
+                await PullPageAsync(PageIndex, connector, config).ConfigureAwait(false);
             };
         }
 
-        public async Task GotoPreviousPageAsync(
+        protected async Task PullPreviousPageAsync(
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null)
         {
             if (HasPreviousPage)
             {
                 PageIndex--;
-                await PullCurrentPageAsync(connector, config).ConfigureAwait(false);
+                await PullPageAsync(PageIndex, connector, config).ConfigureAwait(false);
             };
         }
 
-        private void SyncWith(IPaginatedList<EntityT, KeyT>? paginator)
+        private void UpdatePaginator(IPaginatedList<EntityT, KeyT>? fromPaginator)
         {
-            var args = new PaginatorUpdateEventArgs<EntityT, KeyT>(paginator);
-
+            var args = new PaginatorUpdateEventArgs<EntityT, KeyT>(fromPaginator);
             PrePageUpdate?.Invoke(this, args);
 
-            if (paginator != null)
+            if (fromPaginator != null)
             {
-                Entities = paginator.Entities;
-                PageIndex = paginator.PageIndex;
-                Count = paginator.Count;
-                TotalPages = paginator.TotalPages;
+                Entities = fromPaginator.Entities;
+                PageIndex = fromPaginator.PageIndex;
+                Count = fromPaginator.Count;
+                TotalPages = fromPaginator.TotalPages;
             }
             else
             {
@@ -113,6 +128,7 @@ namespace LionLibrary
         public abstract Task<IPaginatedList<EntityT, KeyT>?> GetPaginatorAsync(
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null,
-            int? page = null);
+            int? page = null,
+            CancellationToken cancelToken = default);
     }
 }

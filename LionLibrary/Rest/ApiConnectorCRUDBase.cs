@@ -102,7 +102,6 @@ namespace LionLibrary
 
             RestRequest request = new RestRequest($"{Route}/{id}", Method.GET);
 
-
             IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
@@ -120,7 +119,8 @@ namespace LionLibrary
 
         public async Task<PaginatedList<EntityT, KeyT>> GetAsync(
             ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> req,
-            int? page = null)
+            int? page = null,
+            CancellationToken cancelToken = default)
         {
             var request = req.Request;
 
@@ -129,7 +129,7 @@ namespace LionLibrary
                 request.AddParameter("page", page.Value);
             }
 
-            IRestResponse response = await Client.ExecuteAsync(request).ConfigureAwait(false);
+            IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -144,7 +144,8 @@ namespace LionLibrary
 
         public async Task<PaginatedList<EntityT, KeyT>> GetAsync(
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? reqExtras = null,
-            int? page = null)
+            int? page = null,
+            CancellationToken cancelToken = default)
         {
             var req = CreateGetRequest();
             reqExtras?.Invoke(req);
@@ -156,7 +157,7 @@ namespace LionLibrary
                 request.AddParameter("page", page.Value);
             }
 
-            IRestResponse response = await Client.ExecuteAsync(request).ConfigureAwait(false);
+            IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -207,7 +208,10 @@ namespace LionLibrary
             return response;
         }
 
-        public Task<IRestResponse> DeleteAsync(IEntity<EntityT, KeyT> entity) => DeleteAsync(entity.Id);
+        public Task<IRestResponse> DeleteAsync(IEntity<EntityT, KeyT> entity)
+        {
+            return DeleteAsync(entity.Id);
+        }
 
         public async Task<IRestResponse> DeleteAsync(KeyT entityKey)
         {
