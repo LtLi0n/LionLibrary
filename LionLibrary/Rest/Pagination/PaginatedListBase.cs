@@ -28,11 +28,14 @@ namespace LionLibrary
         public bool HasPreviousPage => PageIndex > 1;
         public bool HasNextPage => PageIndex < TotalPages;
 
+        public event EventHandler? EntityDownloadStart;
+        public event EventHandler? EntityDownloadFinish;
+
         ///<summary>Get raised before the contents of the paginator are changed</summary>
-        public event EventHandler<PaginatorUpdateEventArgs<EntityT, KeyT>>? PrePageUpdate;
+        public Func<PaginatorUpdateEventArgs<EntityT, KeyT>, Task>? PrePageUpdateTask { get; set; }
 
         ///<summary>Get raised when the contents of the paginator are changed</summary>
-        public event EventHandler<PaginatorUpdateEventArgs<EntityT, KeyT>>? PageUpdate;
+        public Func<PaginatorUpdateEventArgs<EntityT, KeyT>, Task>? PageUpdateTask { get; set; }
 
         public CancellationTokenSource CancellationTokenSource { get; private set; } = 
             new CancellationTokenSource();
@@ -73,11 +76,12 @@ namespace LionLibrary
 
             try
             {
+                EntityDownloadStart?.Invoke(this, new EventArgs());
                 IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page, CancellationTokenSource.Token).ConfigureAwait(false);
-                UpdatePaginator(paginator);
+                await UpdatePaginator(paginator).ConfigureAwait(false);
+                EntityDownloadFinish?.Invoke(this, new EventArgs());
             }
             catch(TaskCanceledException) { }
-            
         }
 
         protected async Task PullNextPageAsync(
@@ -102,11 +106,15 @@ namespace LionLibrary
             };
         }
 
-        private void UpdatePaginator(IPaginatedList<EntityT, KeyT>? fromPaginator)
+        private async Task UpdatePaginator(IPaginatedList<EntityT, KeyT>? fromPaginator)
         {
             var args = new PaginatorUpdateEventArgs<EntityT, KeyT>(fromPaginator);
-            PrePageUpdate?.Invoke(this, args);
 
+            if (PrePageUpdateTask != null)
+            {
+                await PrePageUpdateTask.Invoke(args).ConfigureAwait(false);
+            }
+            
             if (fromPaginator != null)
             {
                 Entities = fromPaginator.Entities;
@@ -122,7 +130,10 @@ namespace LionLibrary
                 TotalPages = 1;
             }
 
-            PageUpdate?.Invoke(this, args);
+            if(PageUpdateTask != null)
+            {
+                await PageUpdateTask.Invoke(args).ConfigureAwait(false);
+            }
         }
 
         public abstract Task<IPaginatedList<EntityT, KeyT>?> GetPaginatorAsync(
