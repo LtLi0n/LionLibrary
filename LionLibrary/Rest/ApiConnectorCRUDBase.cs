@@ -38,6 +38,11 @@ namespace LionLibrary
                 Logger?.Error($"Failed POST request: {response.StatusCode} ({response.StatusDescription})\n{response.Content}");
             }
 
+            if(response.StatusCode == 0)
+            {
+                throw new Exception($"[{Connector.Name}] backend is offline.");
+            }
+
             return response;
         }
 
@@ -110,10 +115,14 @@ namespace LionLibrary
                 initFunc?.Invoke(entity);
                 return JsonConvert.DeserializeObject<T>(response.Content);
             }
-            else
+            else if(response.StatusCode != 0)
             {
                 Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
                 return default;
+            }
+            else
+            {
+                throw new Exception($"[{Connector.Name}] backend is offline.");
             }
         }
 
@@ -135,10 +144,14 @@ namespace LionLibrary
             {
                 return JsonConvert.DeserializeObject<PaginatedList<EntityT, KeyT>>(response.Content);
             }
-            else
+            else if(response.StatusCode != 0)
             {
                 Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
                 return new PaginatedList<EntityT, KeyT>();
+            }
+            else
+            {
+                throw new Exception($"[{Connector.Name}] backend is offline.");
             }
         }
 
@@ -163,10 +176,14 @@ namespace LionLibrary
             {
                 return JsonConvert.DeserializeObject<PaginatedList<EntityT, KeyT>>(response.Content);
             }
-            else
+            else if(response.StatusCode != 0)
             {
                 Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
                 return new PaginatedList<EntityT, KeyT>();
+            }
+            else
+            {
+                throw new Exception($"[{Connector.Name}] backend is offline.");
             }
         }
 
@@ -205,6 +222,11 @@ namespace LionLibrary
                 Logger?.Error($"Failed PUT request: {response.StatusCode} ({response.StatusDescription})\n{response.Content}");
             }
 
+            if(response.StatusCode == 0)
+            {
+                throw new Exception($"[{Connector.Name}] backend is offline.");
+            }
+
             return response;
         }
 
@@ -222,6 +244,10 @@ namespace LionLibrary
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 Logger?.Error($"Failed DELETE request: {response.StatusCode} ({response.StatusDescription})\n{response.Content}");
+            }
+            if(response.StatusCode == 0)
+            {
+                throw new Exception($"[{Connector.Name}] backend is offline.");
             }
 
             return response;
