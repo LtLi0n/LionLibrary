@@ -6,6 +6,8 @@ namespace LionLibrary
 {
     public abstract class ConnectorServiceBase
     {
+        public string Name { get; set; } = "undefined";
+
         public RestClient Client { get; }
 
         protected IServiceProvider _controllers;
