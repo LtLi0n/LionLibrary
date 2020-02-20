@@ -38,6 +38,8 @@ namespace LionLibrary
                 Logger?.Error($"Failed POST request: {response.StatusCode} ({response.StatusDescription})\n{response.Content}");
             }
 
+            entity.Id = response.Data.Id;
+
             return response;
         }
 
@@ -180,7 +182,7 @@ namespace LionLibrary
             var entity = await GetAsync(id, cache, initFunc, cancelToken).ConfigureAwait(false);
             if (entity != null)
             {
-                entity.Connector = Connector;
+                entity.ConnectorService = ConnectorService;
                 entity.ConnectorCRUD = this;
                 initFunc?.Invoke(entity);
             }

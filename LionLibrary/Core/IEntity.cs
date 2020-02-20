@@ -8,7 +8,7 @@ namespace LionLibrary
     where EntityT : class
     where KeyT : notnull, IEquatable<KeyT>, IComparable
     {
-        KeyT Id { get; }
+        KeyT Id { get; set; }
     }
 
     public interface IEntityBase<EntityT>

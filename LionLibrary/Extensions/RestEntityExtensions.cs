@@ -14,7 +14,7 @@ namespace LionLibrary
         {
             if (entity != null)
             {
-                entity.Connector = conn.Connector;
+                entity.ConnectorService = conn.ConnectorService;
                 entity.ConnectorCRUD = conn;
             }
             return entity;
@@ -30,7 +30,7 @@ namespace LionLibrary
             {
                 foreach (var entity in entities)
                 {
-                    entity.Connector = conn.Connector;
+                    entity.ConnectorService = conn.ConnectorService;
                     entity.ConnectorCRUD = conn;
                 }
             }

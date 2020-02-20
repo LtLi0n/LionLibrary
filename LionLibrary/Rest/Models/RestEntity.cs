@@ -11,8 +11,8 @@ namespace LionLibrary
         where EntityT : class, IEntity<EntityT, KeyT>
         where KeyT : notnull, IEquatable<KeyT>, IComparable
     {
-        public ConnectorServiceBase Connector { get; set; }
-        public ApiConnectorCRUDBase<EntityT, KeyT> ConnectorCRUD { get; set; }
+        public ConnectorServiceBase? ConnectorService { get; set; }
+        public ApiConnectorCRUDBase<EntityT, KeyT>? ConnectorCRUD { get; set; }
 
         [DataMember]
 #pragma warning disable CS8653 // If used If used with a serializer, this should never be null.
@@ -21,16 +21,16 @@ namespace LionLibrary
 
         public T? GetConnector<T>()
             where T : ApiConnectorBase =>
-            Connector?.GetConnector<T>();
+            ConnectorService?.GetConnector<T>();
 
         [JsonConstructor]
         protected RestEntity() { }
 
         public RestEntity(
-            ConnectorServiceBase connector, 
+            ConnectorServiceBase connectorService, 
             ApiConnectorCRUDBase<EntityT, KeyT> connectorCrud)
         {
-            Connector = connector;
+            ConnectorService = connectorService;
             ConnectorCRUD = connectorCrud;
         }
 

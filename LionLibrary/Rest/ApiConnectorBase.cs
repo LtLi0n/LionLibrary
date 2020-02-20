@@ -7,15 +7,15 @@ namespace LionLibrary
     {
         public Logger Logger { get; }
         public string Route { get; }
-        public ConnectorServiceBase Connector { get; }
-        public RestClient Client => Connector.Client;
+        public ConnectorServiceBase ConnectorService { get; }
+        public RestClient Client => ConnectorService.Client;
 
         public ApiConnectorBase(
-            ConnectorServiceBase connector,
+            ConnectorServiceBase connectorService,
             Logger logger,
             string route)
         {
-            Connector = connector;
+            ConnectorService = connectorService;
             Logger = logger;
             Route = route;
         }
