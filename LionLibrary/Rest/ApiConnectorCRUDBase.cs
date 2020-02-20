@@ -38,6 +38,11 @@ namespace LionLibrary
                 Logger?.Error($"Failed POST request: {response.StatusCode} ({response.StatusDescription})\n{response.Content}");
             }
 
+            if (response.StatusCode == 0)
+            {
+                throw new Exception($"[{ConnectorService.Name}] backend is offline.");
+            }
+
             entity.Id = response.Data.Id;
 
             return response;
