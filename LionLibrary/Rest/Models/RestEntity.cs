@@ -34,14 +34,18 @@ namespace LionLibrary
             ConnectorCRUD = connectorCrud;
         }
 
-        public Task<IRestResponse> PutAsync() => GetConnector().PutAsync(this);
-        public Task<IRestResponse<EntityT>> PostAsync() => GetConnector().PostAsync(this);
-        public Task<IRestResponse> DeleteAsync() => GetConnector().DeleteAsync(Id);
+        public Task<IRestResponse> PutAsync() => GetConnector(false)!.PutAsync(this);
+        public Task<IRestResponse<EntityT>> PostAsync() => GetConnector(false)!.PostAsync(this);
+        public Task<IRestResponse> DeleteAsync() => GetConnector(false)!.DeleteAsync(Id);
 
-        private ApiConnectorCRUDBase<EntityT, KeyT> GetConnector()
+        public Task<IRestResponse>? TryPutAsync() => GetConnector(true)?.PutAsync(this);
+        public Task<IRestResponse<EntityT>>? TryPostAsync() => GetConnector(true)?.PostAsync(this);
+        public Task<IRestResponse>? TryDeleteAsync() => GetConnector(true)?.DeleteAsync(Id);
+
+        private ApiConnectorCRUDBase<EntityT, KeyT>? GetConnector(bool ignoreIfNullConnector)
         {
             var conn = ConnectorCRUD;
-            if (conn == null)
+            if (conn == null && !ignoreIfNullConnector)
             {
                 throw new NullReferenceException("Connector cannot be null.\nIf you serialize this entity, initialize the Connector property after.");
             }
