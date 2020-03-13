@@ -13,5 +13,12 @@ namespace LionLibrary
             Connector = connector;
             Request = request;
         }
+
+        ///<inheritdoc cref="IRestRequest.AddParameter(string, object)"/>
+        public ConnectorRequest_GET<ConnectorT> AddParameter(string name, object value)
+        {
+            Request.AddParameter(name, value);
+            return this;
+        }
     }
 }
