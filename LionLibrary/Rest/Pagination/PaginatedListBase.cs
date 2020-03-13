@@ -77,7 +77,9 @@ namespace LionLibrary
             try
             {
                 EntityDownloadStart?.Invoke(this, new EventArgs());
-                IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page, CancellationTokenSource.Token).ConfigureAwait(false);
+                IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page, CancellationTokenSource.Token)
+                    .ConfigureAwait(false);
+
                 await UpdatePaginator(paginator).ConfigureAwait(false);
                 EntityDownloadFinish?.Invoke(this, new EventArgs());
             }
@@ -121,6 +123,11 @@ namespace LionLibrary
                 PageIndex = fromPaginator.PageIndex;
                 Count = fromPaginator.Count;
                 TotalPages = fromPaginator.TotalPages;
+
+                if(PageIndex > TotalPages)
+                {
+                    PageIndex = TotalPages;
+                }
             }
             else
             {

@@ -38,6 +38,6 @@ namespace LionLibrary
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null,
             int? page = null,
             CancellationToken cancelToken = default) =>
-            await connector.GetAsync(config, page, cancelToken: cancelToken);
+            await connector.GetAsync(config, page: page, cancelToken: cancelToken);
     }
 }

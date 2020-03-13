@@ -102,11 +102,12 @@ namespace LionLibrary
                         return cachedEntity;
                     }
                 }
-                catch(Exception) { }
+                catch { }
 
                 sw.SpinOnce();
             }
 
+            CreateGetRequest();
             RestRequest request = new RestRequest($"{Route}/{id}", Method.GET);
 
             IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
@@ -126,9 +127,18 @@ namespace LionLibrary
 
         public async Task<PaginatedList<EntityT, KeyT>> GetAsync(
             ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> req,
+            IEnumerable<Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>>? reqExtras = null,
             int? page = null,
             CancellationToken cancelToken = default)
         {
+            if (reqExtras != null)
+            {
+                foreach (var reqExtra in reqExtras)
+                {
+                    reqExtra.Invoke(req);
+                }
+            }
+
             var request = req.Request;
 
             if (page != null)
@@ -150,12 +160,21 @@ namespace LionLibrary
         }
 
         public async Task<PaginatedList<EntityT, KeyT>> GetAsync(
-            Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? reqExtras = null,
+            Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? action = null,
+            IEnumerable<Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>>? reqExtras = null,
             int? page = null,
             CancellationToken cancelToken = default)
         {
             var req = CreateGetRequest();
-            reqExtras?.Invoke(req);
+            action?.Invoke(req);
+
+            if (reqExtras != null)
+            {
+                foreach (var reqExtra in reqExtras)
+                {
+                    reqExtra.Invoke(req);
+                }
+            }
 
             var request = req.Request;
 
@@ -234,7 +253,7 @@ namespace LionLibrary
             return response;
         }
 
-        public ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> CreateGetRequest() =>
-            new ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>(this, new RestRequest(Route, Method.GET, DataFormat.Json));
+        public ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> CreateGetRequest(string? customRoute = null) =>
+            new ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>(this, new RestRequest(customRoute ?? Route, Method.GET, DataFormat.Json));
     }
 }
