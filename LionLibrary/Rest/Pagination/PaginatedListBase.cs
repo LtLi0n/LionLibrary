@@ -28,6 +28,7 @@ namespace LionLibrary
         public bool HasPreviousPage => PageIndex > 1;
         public bool HasNextPage => PageIndex < TotalPages;
 
+
         public event EventHandler? EntityDownloadStart;
         public event EventHandler? EntityDownloadFinish;
 
@@ -80,7 +81,7 @@ namespace LionLibrary
                 IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page, CancellationTokenSource.Token)
                     .ConfigureAwait(false);
 
-                await UpdatePaginator(paginator).ConfigureAwait(false);
+                await UpdatePaginatorAsync(paginator).ConfigureAwait(false);
                 EntityDownloadFinish?.Invoke(this, new EventArgs());
             }
             catch(TaskCanceledException) { }
@@ -108,7 +109,7 @@ namespace LionLibrary
             };
         }
 
-        private async Task UpdatePaginator(IPaginatedList<EntityT, KeyT>? fromPaginator)
+        private async Task UpdatePaginatorAsync(IPaginatedList<EntityT, KeyT>? fromPaginator)
         {
             var args = new PaginatorUpdateEventArgs<EntityT, KeyT>(fromPaginator);
 
