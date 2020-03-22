@@ -20,9 +20,11 @@ namespace LionLibrary
 
         public static async Task<PaginatedList<EntityT, KeyT>> CreateAsync(
             IQueryable<EntityT> source,
-            int pageIndex,
+            int? _pageIndex,
             int pageSize)
         {
+            int pageIndex = _pageIndex ?? 1;
+
             int count = await source.CountAsync();
 
             EntityT[] items = await source

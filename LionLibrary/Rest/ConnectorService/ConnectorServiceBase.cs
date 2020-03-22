@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using RestSharp;
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace LionLibrary
 {
@@ -33,6 +35,24 @@ namespace LionLibrary
             var builder = new ConnectorServiceRoutesBuilder();
             builderAction(builder);
             builder.ServiceCollection.AddSingleton(owner);
+            _controllers = builder.ServiceCollection.BuildServiceProvider();
+        }
+
+        public void AddApiConnectors<ConnectorAttributeT>(T owner, Assembly assembly)
+            where ConnectorAttributeT : Attribute
+        {
+            var connectorTypes = assembly.DefinedTypes
+                .Where(x => x.CustomAttributes.Any(attr => attr.AttributeType == typeof(ConnectorAttributeT)));
+
+            var builder = new ConnectorServiceRoutesBuilder();
+            
+            builder.ServiceCollection.AddSingleton(owner);
+
+            foreach(var connectorType in connectorTypes)
+            {
+                builder.ServiceCollection.AddScoped(connectorType);
+            }
+
             _controllers = builder.ServiceCollection.BuildServiceProvider();
         }
     }
