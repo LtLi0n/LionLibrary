@@ -69,19 +69,19 @@ namespace LionLibrary
         }
 
 
-        public Task<EntityT?> GetAsync(
+        public Task<EntityResult<EntityT>> GetAsync(
             KeyT id,
             IDictionary<KeyT, EntityT>? cache = null, 
             Action<EntityT>? initFunc = null,
             CancellationToken cancelToken = default) => 
             GetAsync<EntityT>(id, cache, initFunc, cancelToken);
 
-        public async Task<T?> GetAsync<T>(
+        public async Task<EntityResult<DerivedEntityT>> GetAsync<DerivedEntityT>(
             KeyT id,
-            IDictionary<KeyT, T>? cache = null, 
-            Action<T>? initFunc = null,
+            IDictionary<KeyT, DerivedEntityT>? cache = null, 
+            Action<DerivedEntityT>? initFunc = null,
             CancellationToken cancelToken = default)
-            where T : class, IEntity<EntityT, KeyT>
+            where DerivedEntityT : class, IEntity<EntityT, KeyT>
         {
             SpinWait sw = new SpinWait();
 
@@ -91,15 +91,15 @@ namespace LionLibrary
                 {
                     if(cancelToken.IsCancellationRequested)
                     {
-                        return null;
+                        return new EntityResult<DerivedEntityT>(default, default);
                     }
                 }
 
                 try
                 {
-                    if (cache.TryGetValue(id, out T? cachedEntity))
+                    if (cache.TryGetValue(id, out DerivedEntityT? cachedEntity))
                     {
-                        return cachedEntity;
+                        return new EntityResult<DerivedEntityT>(default, cachedEntity);
                     }
                 }
                 catch { }
@@ -114,14 +114,14 @@ namespace LionLibrary
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                var entity = JsonConvert.DeserializeObject<T>(response.Content);
+                var entity = JsonConvert.DeserializeObject<DerivedEntityT>(response.Content);
                 initFunc?.Invoke(entity);
-                return JsonConvert.DeserializeObject<T>(response.Content);
+                return new EntityResult<DerivedEntityT>(response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
             }
             else
             {
                 Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
-                return default;
+                return new EntityResult<DerivedEntityT>(default, default);
             }
         }
 
@@ -196,21 +196,21 @@ namespace LionLibrary
             }
         }
 
-        public async Task<T?> GetAsyncWithRest<T>(
+        public async Task<EntityResult<DerivedEntityT>> GetAsyncWithRest<DerivedEntityT>(
             KeyT id,
-            IDictionary<KeyT, T>? cache = null, 
-            Action<T>? initFunc = null,
+            IDictionary<KeyT, DerivedEntityT>? cache = null, 
+            Action<DerivedEntityT>? initFunc = null,
             CancellationToken cancelToken = default)
-            where T : RestEntity<EntityT, KeyT>, IEntity<EntityT, KeyT>
+            where DerivedEntityT : RestEntity<EntityT, KeyT>, IEntity<EntityT, KeyT>
         {
-            var entity = await GetAsync(id, cache, initFunc, cancelToken).ConfigureAwait(false);
-            if (entity != null)
+            var result = await GetAsync(id, cache, initFunc, cancelToken).ConfigureAwait(false);
+            if (result.Entity != null)
             {
-                entity.ConnectorService = ConnectorService;
-                entity.ConnectorCRUD = this;
-                initFunc?.Invoke(entity);
+                result.Entity.ConnectorService = ConnectorService;
+                result.Entity.ConnectorCRUD = this;
+                initFunc?.Invoke(result.Entity);
             }
-            return entity;
+            return result;
         }
 
         public Task<IRestResponse> PutAsync<T>(T entity)
