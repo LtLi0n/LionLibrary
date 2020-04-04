@@ -22,7 +22,7 @@ namespace LionLibrary
             Logger logger,
             string route) : base(connector, logger, route) { }
 
-        public async Task<IRestResponse<EntityT>> PostAsync<T>(T entity)
+        public virtual async Task<IRestResponse<EntityT>> PostAsync<T>(T entity)
             where T : IEntity<EntityT, KeyT>
         {
             RestRequest request = new RestRequest(Route, Method.POST) { RequestFormat = DataFormat.Json };
@@ -48,7 +48,7 @@ namespace LionLibrary
             return response;
         }
 
-        public async IAsyncEnumerable<IRestResponse<EntityT>> PostAsync<T>(IEnumerable<T> entities)
+        public virtual async IAsyncEnumerable<IRestResponse<EntityT>> PostAsync<T>(IEnumerable<T> entities)
             where T : IEntity<EntityT, KeyT>
         {
             var tasks = new Queue<Task<IRestResponse<EntityT>>>(MAX_BULK_POST);
@@ -69,14 +69,14 @@ namespace LionLibrary
         }
 
 
-        public Task<EntityT?> GetAsync(
+        public virtual Task<EntityT?> GetAsync(
             KeyT id,
             IDictionary<KeyT, EntityT>? cache = null, 
             Action<EntityT>? initFunc = null,
             CancellationToken cancelToken = default) => 
             GetAsync<EntityT>(id, cache, initFunc, cancelToken);
 
-        public async Task<T?> GetAsync<T>(
+        public virtual async Task<T?> GetAsync<T>(
             KeyT id,
             IDictionary<KeyT, T>? cache = null, 
             Action<T>? initFunc = null,
@@ -125,7 +125,7 @@ namespace LionLibrary
             }
         }
 
-        public async Task<PaginatedList<EntityT, KeyT>> GetAsync(
+        public virtual async Task<PaginatedList<EntityT, KeyT>> GetAsync(
             ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> req,
             IEnumerable<Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>>? reqExtras = null,
             int? page = null,
@@ -159,7 +159,7 @@ namespace LionLibrary
             }
         }
 
-        public async Task<PaginatedList<EntityT, KeyT>> GetAsync(
+        public virtual async Task<PaginatedList<EntityT, KeyT>> GetAsync(
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? action = null,
             IEnumerable<Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>>? reqExtras = null,
             int? page = null,
@@ -196,7 +196,7 @@ namespace LionLibrary
             }
         }
 
-        public async Task<T?> GetAsyncWithRest<T>(
+        public virtual async Task<T?> GetAsyncWithRest<T>(
             KeyT id,
             IDictionary<KeyT, T>? cache = null, 
             Action<T>? initFunc = null,
@@ -213,7 +213,7 @@ namespace LionLibrary
             return entity;
         }
 
-        public Task<IRestResponse> PutAsync<T>(T entity)
+        public virtual Task<IRestResponse> PutAsync<T>(T entity)
             where T : IEntity<EntityT, KeyT>
             => PutAsync(entity.Id, entity);
 
@@ -234,12 +234,12 @@ namespace LionLibrary
             return response;
         }
 
-        public Task<IRestResponse> DeleteAsync(IEntity<EntityT, KeyT> entity)
+        public virtual Task<IRestResponse> DeleteAsync(IEntity<EntityT, KeyT> entity)
         {
             return DeleteAsync(entity.Id);
         }
 
-        public async Task<IRestResponse> DeleteAsync(KeyT entityKey)
+        public virtual async Task<IRestResponse> DeleteAsync(KeyT entityKey)
         {
             RestRequest request = new RestRequest($"{Route}/{entityKey}", Method.DELETE);
 
