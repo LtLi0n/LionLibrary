@@ -22,7 +22,7 @@ namespace LionLibrary
             Logger logger,
             string route) : base(connector, logger, route) { }
 
-        public virtual async Task<IRestResponse<EntityT>> PostAsync<T>(T entity)
+        public virtual async Task<IRestResponse<T>> PostAsync<T>(T entity)
             where T : IEntity<EntityT, KeyT>
         {
             RestRequest request = new RestRequest(Route, Method.POST) { RequestFormat = DataFormat.Json };
@@ -30,7 +30,7 @@ namespace LionLibrary
             string json = JsonConvert.SerializeObject(entity);
             request.AddParameter("application/json", json, ParameterType.RequestBody);
 
-            var response = await Client.ExecuteAsync<EntityT>(request).ConfigureAwait(false);
+            var response = await Client.ExecuteAsync<T>(request).ConfigureAwait(false);
 
             if (response.StatusCode != HttpStatusCode.OK &&
                 response.StatusCode != HttpStatusCode.Created)
@@ -48,10 +48,10 @@ namespace LionLibrary
             return response;
         }
 
-        public virtual async IAsyncEnumerable<IRestResponse<EntityT>> PostAsync<T>(IEnumerable<T> entities)
+        public virtual async IAsyncEnumerable<IRestResponse<T>> PostAsync<T>(IEnumerable<T> entities)
             where T : IEntity<EntityT, KeyT>
         {
-            var tasks = new Queue<Task<IRestResponse<EntityT>>>(MAX_BULK_POST);
+            var tasks = new Queue<Task<IRestResponse<T>>>(MAX_BULK_POST);
             foreach (var entity in entities)
             {
                 tasks.Enqueue(PostAsync(entity));
@@ -97,14 +97,15 @@ namespace LionLibrary
 
                 try
                 {
-                    if (cache.TryGetValue(id, out DerivedEntityT? cachedEntity))
+                    if (cache.ContainsKey(id))
                     {
-                        return new EntityResult<DerivedEntityT>(default, cachedEntity);
+                        return new EntityResult<DerivedEntityT>(default, cache[id]);
                     }
                 }
                 catch { }
 
-                sw.SpinOnce();
+                await Task.Delay(1);
+                //sw.SpinOnce();
             }
 
             CreateGetRequest();

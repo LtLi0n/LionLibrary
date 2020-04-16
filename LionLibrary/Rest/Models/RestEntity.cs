@@ -35,11 +35,11 @@ namespace LionLibrary
         }
 
         public Task<IRestResponse> PutAsync() => GetConnector(false)!.PutAsync(this);
-        public Task<IRestResponse<EntityT>> PostAsync() => GetConnector(false)!.PostAsync(this);
+        public Task<IRestResponse<RestEntity<EntityT, KeyT>>> PostAsync() => GetConnector(false)!.PostAsync(this);
         public Task<IRestResponse> DeleteAsync() => GetConnector(false)!.DeleteAsync(Id);
 
         public Task<IRestResponse>? TryPutAsync() => GetConnector(true)?.PutAsync(this);
-        public Task<IRestResponse<EntityT>>? TryPostAsync() => GetConnector(true)?.PostAsync(this);
+        public Task<IRestResponse<RestEntity<EntityT, KeyT>>>? TryPostAsync() => GetConnector(true)?.PostAsync(this);
         public Task<IRestResponse>? TryDeleteAsync() => GetConnector(true)?.DeleteAsync(Id);
 
         private ApiConnectorCRUDBase<EntityT, KeyT>? GetConnector(bool ignoreIfNullConnector)
