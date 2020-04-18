@@ -26,7 +26,7 @@ namespace LionLibrary
         [JsonConstructor]
         protected RestEntity() { }
 
-        public RestEntity(
+        protected RestEntity(
             ConnectorServiceBase connectorService, 
             ApiConnectorCRUDBase<EntityT, KeyT> connectorCrud)
         {
@@ -42,7 +42,7 @@ namespace LionLibrary
         public Task<IRestResponse<RestEntity<EntityT, KeyT>>>? TryPostAsync() => GetConnector(true)?.PostAsync(this);
         public Task<IRestResponse>? TryDeleteAsync() => GetConnector(true)?.DeleteAsync(Id);
 
-        private ApiConnectorCRUDBase<EntityT, KeyT>? GetConnector(bool ignoreIfNullConnector)
+        protected ApiConnectorCRUDBase<EntityT, KeyT>? GetConnector(bool ignoreIfNullConnector)
         {
             var conn = ConnectorCRUD;
             if (conn == null && !ignoreIfNullConnector)
