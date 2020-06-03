@@ -19,9 +19,9 @@ namespace LionLibrary
         public KeyT Id { get; set; } = default;
 #pragma warning restore CS8653 // If used If used with a serializer, this should never be null.
 
-        public T? GetConnector<T>()
+        public T GetConnector<T>()
             where T : ApiConnectorBase =>
-            ConnectorService?.GetConnector<T>();
+                ConnectorService!.GetConnector<T>();
 
         [JsonConstructor]
         protected RestEntity() { }

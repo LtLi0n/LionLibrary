@@ -17,7 +17,7 @@ namespace LionLibrary
     {
         public const int MAX_BULK_POST = 50;
 
-        public ApiConnectorCRUDBase(
+        protected ApiConnectorCRUDBase(
             ConnectorServiceBase connector,
             Logger logger,
             string route) : base(connector, logger, route) { }
@@ -83,8 +83,6 @@ namespace LionLibrary
             CancellationToken cancelToken = default)
             where DerivedEntityT : class, IEntity<EntityT, KeyT>
         {
-            SpinWait sw = new SpinWait();
-
             while (cache != null)
             {
                 if(cancelToken != default)
@@ -202,7 +200,7 @@ namespace LionLibrary
             IDictionary<KeyT, DerivedEntityT>? cache = null, 
             Action<DerivedEntityT>? initFunc = null,
             CancellationToken cancelToken = default)
-            where DerivedEntityT : RestEntity<EntityT, KeyT>, IEntity<EntityT, KeyT>
+                where DerivedEntityT : RestEntity<EntityT, KeyT>, IEntity<EntityT, KeyT>
         {
             var result = await GetAsync(id, cache, initFunc, cancelToken).ConfigureAwait(false);
             if (result.Entity != null)
