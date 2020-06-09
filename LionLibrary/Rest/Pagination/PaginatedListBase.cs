@@ -65,7 +65,7 @@ namespace LionLibrary
         public async Task PullCurrentPageAsync(
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null) =>
-            await PullPageAsync(PageIndex, connector, config).ConfigureAwait(false);
+                await PullPageAsync(PageIndex, connector, config).ConfigureAwait(false);
 
         protected async Task PullPageAsync(
             int page,

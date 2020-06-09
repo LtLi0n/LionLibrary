@@ -35,11 +35,31 @@ namespace LionLibrary
             return new PaginatedList<EntityT, KeyT>(items, count, pageIndex, pageSize);
         }
 
+        public virtual async IAsyncEnumerable<IPaginatedList<EntityT, KeyT>> PullAllPagesAsync(ApiConnectorCRUDBase<EntityT, KeyT> connector)
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            for (int page_i = 1; page_i <= TotalPages; page_i++)
+            {
+                var paginator = await GetPaginatorAsync(connector, page: page_i, cancelToken: token);
+
+                if (paginator != null)
+                {
+                    yield return paginator;
+                }
+                else
+                {
+                    yield break;
+                }
+            }
+        }
+
         public override async Task<IPaginatedList<EntityT, KeyT>?> GetPaginatorAsync(
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null,
             int? page = null,
             CancellationToken cancelToken = default) =>
-            await connector.GetAsync(config, page: page, cancelToken: cancelToken);
+                await connector.GetAsync(config, page: page, cancelToken: cancelToken);
     }
 }
