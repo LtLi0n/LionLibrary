@@ -33,15 +33,15 @@ namespace LionLibrary
         public event EventHandler? EntityDownloadFinish;
 
         ///<summary>Get raised before the contents of the paginator are changed</summary>
-        public Func<PaginatorUpdateEventArgs<EntityT, KeyT>, Task>? PrePageUpdateTask { get; set; }
+        protected Func<PaginatorUpdateEventArgs<EntityT, KeyT>, Task>? PrePageUpdateTask { get; set; }
 
         ///<summary>Get raised when the contents of the paginator are changed</summary>
-        public Func<PaginatorUpdateEventArgs<EntityT, KeyT>, Task>? PageUpdateTask { get; set; }
+        protected Func<PaginatorUpdateEventArgs<EntityT, KeyT>, Task>? PageUpdateTask { get; set; }
 
         public CancellationTokenSource CancellationTokenSource { get; private set; } = 
             new CancellationTokenSource();
 
-        public PaginatedListBase()
+        protected PaginatedListBase()
         {
             Entities = Enumerable.Empty<EntityT>();
             Count = 0;
@@ -49,7 +49,7 @@ namespace LionLibrary
             TotalPages = 1;
         }
 
-        public PaginatedListBase(IEnumerable<EntityT> items, int count, int pageIndex, int pageSize)
+        protected PaginatedListBase(IEnumerable<EntityT> items, int count, int pageIndex, int pageSize)
         {
             Entities = items;
             Count = count;
