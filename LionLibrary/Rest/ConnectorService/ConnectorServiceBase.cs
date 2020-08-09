@@ -32,6 +32,9 @@ namespace LionLibrary
             where T : ApiConnectorBase =>
             _connectors.GetRequiredService<T>();
 
+        public ApiConnectorBase? GetConnector(Type type) =>
+            _connectors.GetService(type) as ApiConnectorBase;
+
         public ApiConnectorCRUDBase<EntityT, KeyT> GetConnector<EntityT, KeyT>()
             where EntityT : class, IEntity<EntityT, KeyT>
             where KeyT : notnull, IEquatable<KeyT>, IComparable =>
