@@ -53,11 +53,11 @@ namespace LionLibrary
     {
         protected ConnectorServiceBase(string host) : base(host) { }
 
-        public void WithApiConnectors(T owner, Action<ConnectorServiceRoutesBuilder> builderAction)
+        public void WithApiConnectors(Action<ConnectorServiceRoutesBuilder> builderAction)
         {
             var builder = new ConnectorServiceRoutesBuilder();
             builderAction(builder);
-            builder.ServiceCollection.AddSingleton(owner);
+            builder.ServiceCollection.AddSingleton((T)this);
             _connectors = builder.ServiceCollection.BuildServiceProvider();
         }
 
@@ -69,7 +69,7 @@ namespace LionLibrary
 
             var builder = new ConnectorServiceRoutesBuilder();
 
-            builder.ServiceCollection.AddSingleton(GetType());
+            builder.ServiceCollection.AddSingleton((T)this);
 
             foreach (var connectorType in connectorTypes)
             {
