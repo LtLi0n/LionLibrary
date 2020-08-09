@@ -2,8 +2,11 @@
 using RestSharp;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace LionLibrary
 {
@@ -15,12 +18,15 @@ namespace LionLibrary
 
         protected IServiceProvider _connectors;
 
+        protected ConcurrentDictionary<Type, Type> _derivedToChildConnectorReferences =
+            new ConcurrentDictionary<Type, Type>();
+
         ///<summary>
         ///<para>Storage of derived and child connector types.</para>
         ///<para> Item1: <see cref="ApiConnectorCRUDBase{EntityT, KeyT}"/> type.</para>
         ///<para> Item2: Connector type.</para></summary>
-        protected ConcurrentDictionary<Type, Type> _derivedToChildConnectorReferences =
-            new ConcurrentDictionary<Type, Type>();
+        public IReadOnlyDictionary<Type, Type> DerivedToChildConnectorReferences => 
+            _derivedToChildConnectorReferences;
 
         public T GetConnector<T>()
             where T : ApiConnectorBase =>
@@ -52,7 +58,7 @@ namespace LionLibrary
             _connectors = builder.ServiceCollection.BuildServiceProvider();
         }
 
-        public void AddApiConnectors<ConnectorAttributeT>(T owner, Assembly assembly)
+        protected Task AddApiConnectorsAsync<ConnectorAttributeT>(Assembly assembly)
             where ConnectorAttributeT : Attribute
         {
             var connectorTypes = assembly.DefinedTypes
@@ -60,7 +66,7 @@ namespace LionLibrary
 
             var builder = new ConnectorServiceRoutesBuilder();
 
-            builder.ServiceCollection.AddSingleton(owner);
+            builder.ServiceCollection.AddSingleton(GetType());
 
             foreach (var connectorType in connectorTypes)
             {
@@ -69,6 +75,8 @@ namespace LionLibrary
             }
 
             _connectors = builder.ServiceCollection.BuildServiceProvider();
+
+            return Task.CompletedTask;
         }
     }
 }
