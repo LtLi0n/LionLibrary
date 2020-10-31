@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using RestSharp;
 using System;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
@@ -41,6 +42,23 @@ namespace LionLibrary
         public Task<IRestResponse>? TryPutAsync() => GetConnector(true)?.PutAsync(this);
         public Task<IRestResponse<RestEntity<EntityT, KeyT>>>? TryPostAsync() => GetConnector(true)?.PostAsync(this);
         public Task<IRestResponse>? TryDeleteAsync() => GetConnector(true)?.DeleteAsync(Id);
+
+        ///<summary> Assign property values containing <see cref="DataMemberAttribute"/> attributes from the supplied entity. </summary>
+        public void UpdateFrom(RestEntity<EntityT, KeyT> other)
+        {
+            var props = other.GetType().GetProperties().Where(
+                x => x.CustomAttributes.Any(x => x.AttributeType == typeof(DataMemberAttribute)));
+
+            // init DataMember values
+            foreach (var prop in props)
+            {
+                if (prop != null)
+                {
+                    object? value = prop.GetValue(other);
+                    prop.SetValue(this, value);
+                }
+            }
+        }
 
         protected ApiConnectorCRUDBase<EntityT, KeyT>? GetConnector(bool ignoreIfNullConnector)
         {
