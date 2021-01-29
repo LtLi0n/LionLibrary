@@ -83,43 +83,51 @@ namespace LionLibrary
             CancellationToken cancelToken = default)
             where DerivedEntityT : class, IEntity<EntityT, KeyT>
         {
-            while (cache != null)
+            if(cache == null)
             {
-                if(cancelToken != default)
+                CreateGetRequest();
+                RestRequest request = new RestRequest($"{Route}/{id}", Method.GET);
+
+                IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
+
+                if (response.StatusCode == HttpStatusCode.OK)
                 {
-                    if(cancelToken.IsCancellationRequested)
-                    {
-                        return new EntityResult<DerivedEntityT>(default, default);
-                    }
+                    var entity = JsonConvert.DeserializeObject<DerivedEntityT>(response.Content);
+                    initFunc?.Invoke(entity);
+                    return new EntityResult<DerivedEntityT>(response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
                 }
-
-                try
+                else
                 {
-                    if (cache.ContainsKey(id))
-                    {
-                        return new EntityResult<DerivedEntityT>(default, cache[id]);
-                    }
+                    Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
+                    return new EntityResult<DerivedEntityT>(default, default);
                 }
-                catch { }
-
-                await Task.Delay(1);
-                //sw.SpinOnce();
-            }
-
-            CreateGetRequest();
-            RestRequest request = new RestRequest($"{Route}/{id}", Method.GET);
-
-            IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
-
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                var entity = JsonConvert.DeserializeObject<DerivedEntityT>(response.Content);
-                initFunc?.Invoke(entity);
-                return new EntityResult<DerivedEntityT>(response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
             }
             else
             {
-                Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
+                while (cache != null)
+                {
+                    if (cancelToken != default)
+                    {
+                        if (cancelToken.IsCancellationRequested)
+                        {
+                            return new EntityResult<DerivedEntityT>(default, default);
+                        }
+                    }
+
+                    try
+                    {
+                        if (cache.ContainsKey(id))
+                        {
+                            return new EntityResult<DerivedEntityT>(default, cache[id]);
+                        }
+                    }
+                    catch { }
+
+                    await Task.Delay(1);
+                    //sw.SpinOnce();
+                }
+
+                Logger?.Error($"Failed to obtain object from the cache.");
                 return new EntityResult<DerivedEntityT>(default, default);
             }
         }

@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using RestSharp;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
@@ -8,9 +10,12 @@ using System.Threading.Tasks;
 namespace LionLibrary
 {
     [DataContract]
-    public abstract class RestEntity<EntityT, KeyT> : IEntity<EntityT, KeyT>
-        where EntityT : class, IEntity<EntityT, KeyT>
-        where KeyT : notnull, IEquatable<KeyT>, IComparable
+    public abstract class RestEntity<EntityT, KeyT> : 
+        IEntity<EntityT, KeyT>, 
+        IComparable<RestEntity<EntityT, KeyT>>,
+        IEquatable<RestEntity<EntityT, KeyT>>
+            where EntityT : class, IEntity<EntityT, KeyT>
+            where KeyT : notnull, IEquatable<KeyT>, IComparable
     {
         public ConnectorServiceBase? ConnectorService { get; set; }
         public ApiConnectorCRUDBase<EntityT, KeyT>? ConnectorCRUD { get; set; }
@@ -69,5 +74,45 @@ namespace LionLibrary
             }
             return conn;
         }
+
+        public int CompareTo([AllowNull] RestEntity<EntityT, KeyT> other)
+        {
+            if (other != null)
+            {
+                return Id.CompareTo(other.Id);
+            }
+
+            return -1;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if(obj == null)
+            {
+                return false;
+            }
+
+            RestEntity<EntityT, KeyT>? entity = obj as RestEntity<EntityT, KeyT>;
+            if(entity == null)
+            {
+                return false;
+            }
+            else
+            {
+                return Equals(entity);
+            }
+        }
+
+        public bool Equals([AllowNull] RestEntity<EntityT, KeyT> other) =>
+            other != null && other.Id.CompareTo(Id) == 0;
+
+        public override int GetHashCode() => 
+            HashCode.Combine(Id);
+
+        public static bool operator ==(RestEntity<EntityT, KeyT>? left, RestEntity<EntityT, KeyT>? right) =>
+            EqualityComparer<RestEntity<EntityT, KeyT>>.Default.Equals(left, right);
+
+        public static bool operator !=(RestEntity<EntityT, KeyT>? left, RestEntity<EntityT, KeyT>? right) =>
+            !(left == right);
     }
 }
