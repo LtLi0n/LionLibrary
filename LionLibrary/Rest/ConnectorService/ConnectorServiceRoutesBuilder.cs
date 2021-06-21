@@ -7,8 +7,7 @@ namespace LionLibrary
         internal ServiceCollection ServiceCollection { get; } = new ServiceCollection();
         internal ConnectorServiceRoutesBuilder() { }
 
-        public void AddConnector<T>()
-            where T : ApiConnectorBase =>
+        public void AddConnector<T>() where T : ApiConnectorBase =>
             ServiceCollection.AddScoped<T>();
     }
 }

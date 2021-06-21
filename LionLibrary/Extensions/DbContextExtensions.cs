@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Threading;
 
 namespace LionLibrary
 {
@@ -13,7 +14,7 @@ namespace LionLibrary
             IEntity<EntityT, KeyT> entity,
             DbSet<EntityT>? db_set = null)
             where EntityT : class, IEntity<EntityT, KeyT>
-            where KeyT : notnull, IEquatable<KeyT>, IComparable
+            where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
         {
             EntityEntry<EntityT> result = await
                 (db_set != null ? db_set.AddAsync((EntityT)entity) :
@@ -21,12 +22,12 @@ namespace LionLibrary
             try
             {
                 await context.SaveChangesAsync();
-                return (result.Entity as IEntity<EntityT, KeyT>).Id;
+                return result.Entity.Id;
             }
-            catch (Exception ex)
+            catch
             {
                 context.Remove(entity);
-                throw ex;
+                throw;
             }
         }
 
@@ -44,52 +45,54 @@ namespace LionLibrary
                 await context.SaveChangesAsync();
                 return result.Entity;
             }
-            catch (Exception ex)
+            catch
             {
                 context.Remove(entity);
-                throw ex;
+                throw;
             }
         }
 
-        public static async Task UpdateEntityAsync<EntityT, KeyT>(
-            this DbContext context,
-            IEntity<EntityT, KeyT> entity)
-            where EntityT : class, IEntity<EntityT, KeyT>
-            where KeyT : notnull, IEquatable<KeyT>, IComparable =>
-            await UpdateEntityFinalAsync(context, entity);
+        public static Task UpdateEntityAsync<EntityT, KeyT>(this DbContext context, IEntity<EntityT, KeyT> entity, CancellationToken cancellationToken = default)
+                where EntityT : class, IEntity<EntityT, KeyT>
+                where KeyT : notnull, IEquatable<KeyT>, IComparable, new() =>
+            UpdateEntityFinalAsync(context, entity, cancellationToken);
 
-        public static async Task UpdateEntityAsync<EntityT>(this DbContext context, IEntityBase<EntityT> entity)
-            where EntityT : class =>
-            await UpdateEntityFinalAsync(context, entity);
+        public static Task UpdateEntityAsync<EntityT>(this DbContext context, IEntityBase<EntityT> entity, CancellationToken cancellationToken = default)
+                where EntityT : class =>
+            UpdateEntityFinalAsync(context, entity, cancellationToken);
 
-        public static async Task UpdateEntityAsync<EntityT, KeyT>(
+        public static Task UpdateEntityAsync<EntityT, KeyT>(
             this DbContext context,
             IEntity<EntityT, KeyT> entity,
-            IDictionary<string, object> update_values)
-            where EntityT : class, IEntity<EntityT, KeyT>
-            where KeyT : notnull, IEquatable<KeyT>, IComparable
+            IDictionary<string, object> update_values,
+            CancellationToken cancellationToken = default)
+                where EntityT : class, IEntity<EntityT, KeyT>
+                where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
         {
             context.Entry(entity).CurrentValues.SetValues(update_values);
-            await AttemptSaveChangesAsync(context);
+            return AttemptSaveChangesAsync(context, cancellationToken);
         }
 
-        private static async Task UpdateEntityFinalAsync<EntityT>(
+        private static Task UpdateEntityFinalAsync<EntityT>(
             this DbContext context,
-            EntityT entity)
+            EntityT entity,
+            CancellationToken cancellationToken = default)
         {
             context.Entry(entity).State = EntityState.Modified;
-            await AttemptSaveChangesAsync(context);
+            return AttemptSaveChangesAsync(context, cancellationToken);
         }
 
-        private static async Task AttemptSaveChangesAsync(this DbContext context)
+        private static async Task AttemptSaveChangesAsync(
+            this DbContext context,
+            CancellationToken cancellationToken = default)
         {
             try
             {
-                await context.SaveChangesAsync();
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch
             {
-                throw ex;
+                throw;
             }
         }
     }

@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace LionLibrary
@@ -16,10 +15,11 @@ namespace LionLibrary
 
         public RestClient Client { get; }
 
+        public string Host { get; }
+
         protected IServiceProvider _connectors;
 
-        protected ConcurrentDictionary<Type, Type> _derivedToChildConnectorReferences =
-            new ConcurrentDictionary<Type, Type>();
+        protected ConcurrentDictionary<Type, Type> _derivedToChildConnectorReferences = new();
 
         ///<summary>
         ///<para>Storage of derived and child connector types.</para>
@@ -37,14 +37,20 @@ namespace LionLibrary
 
         public ApiConnectorCRUDBase<EntityT, KeyT> GetConnector<EntityT, KeyT>()
             where EntityT : class, IEntity<EntityT, KeyT>
-            where KeyT : notnull, IEquatable<KeyT>, IComparable =>
+            where KeyT : notnull, IEquatable<KeyT>, IComparable, new() =>
                 (ApiConnectorCRUDBase<EntityT, KeyT>)_connectors.GetRequiredService(
                     _derivedToChildConnectorReferences[typeof(ApiConnectorCRUDBase<EntityT, KeyT>)]);
 
         protected ConnectorServiceBase(string host)
         {
+            if (string.IsNullOrEmpty(host))
+            {
+                throw new ArgumentException($"'{nameof(host)}' cannot be null or empty.", nameof(host));
+            }
+
             Client = new RestClient(host);
             _connectors = new ServiceCollection().BuildServiceProvider();
+            Host = host;
         }
     }
 

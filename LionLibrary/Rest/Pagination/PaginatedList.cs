@@ -11,7 +11,7 @@ namespace LionLibrary
     [DataContract]
     public class PaginatedList<EntityT, KeyT> : PaginatedListBase<EntityT, KeyT>
         where EntityT : class, IEntity<EntityT, KeyT>
-        where KeyT : notnull, IEquatable<KeyT>, IComparable
+        where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
     {
         public PaginatedList() : base() { }
 
@@ -21,28 +21,32 @@ namespace LionLibrary
         public static async Task<PaginatedList<EntityT, KeyT>> CreateAsync(
             IQueryable<EntityT> source,
             int? _pageIndex,
-            int pageSize)
+            int pageSize,
+            CancellationToken cancellationToken = default)
         {
             int pageIndex = _pageIndex ?? 1;
 
-            int count = await source.CountAsync();
+            int count = await source.CountAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
 
             EntityT[] items = await source
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
-                .ToArrayAsync();
+                .ToArrayAsync(cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
 
-            return new PaginatedList<EntityT, KeyT>(items, count, pageIndex, pageSize);
+            PaginatedList<EntityT, KeyT> paginatedList = new(items, count, pageIndex, pageSize);
+            return paginatedList;
         }
 
         public virtual async IAsyncEnumerable<IPaginatedList<EntityT, KeyT>> PullAllPagesAsync(ApiConnectorCRUDBase<EntityT, KeyT> connector)
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
-            var token = cts.Token;
+            CancellationTokenSource cts = new();
+            var cancellationToken = cts.Token;
 
             for (int page_i = 1; page_i <= TotalPages; page_i++)
             {
-                var paginator = await GetPaginatorAsync(connector, page: page_i, cancelToken: token);
+                IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(
+                    connector, page: page_i, cancellationToken: cancellationToken).ConfigureAwait(false);
 
                 if (paginator != null)
                 {
@@ -59,7 +63,7 @@ namespace LionLibrary
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null,
             int? page = null,
-            CancellationToken cancelToken = default) =>
-                await connector.GetAsync(config, page: page, cancelToken: cancelToken);
+            CancellationToken cancellationToken = default) =>
+                await connector.GetAsync(config, page: page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }

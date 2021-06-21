@@ -6,8 +6,8 @@ namespace LionLibrary
 {
     public class PaginatorUpdateEventArgs<EntityT, KeyT> :
     EventArgs, IPaginatedList<EntityT, KeyT>
-    where EntityT : class, IEntity<EntityT, KeyT>
-    where KeyT : notnull, IEquatable<KeyT>, IComparable
+        where EntityT : class, IEntity<EntityT, KeyT>
+        where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
     {
         ///<summary>Represents a paginator obtained through a connector</summary>
         public IPaginatedList<EntityT, KeyT>? LastPaginator { get; }

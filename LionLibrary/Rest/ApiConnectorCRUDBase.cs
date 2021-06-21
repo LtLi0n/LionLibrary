@@ -8,12 +8,13 @@ using System.Threading.Tasks;
 using System.Threading;
 
 using RestRequest = RestSharp.RestRequest;
+using System.Runtime.CompilerServices;
 
 namespace LionLibrary
 {
     public abstract class ApiConnectorCRUDBase<EntityT, KeyT> : ApiConnectorBase
             where EntityT : class, IEntity<EntityT, KeyT>
-            where KeyT : notnull, IEquatable<KeyT>, IComparable
+            where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
     {
         public const int MAX_BULK_POST = 50;
 
@@ -22,15 +23,18 @@ namespace LionLibrary
             Logger logger,
             string route) : base(connector, logger, route) { }
 
-        public virtual async Task<IRestResponse<T>> PostAsync<T>(T entity)
+        public virtual async Task<IRestResponse<T>> PostAsync<T>(T entity, CancellationToken cancellationToken = default)
             where T : IEntity<EntityT, KeyT>
         {
-            RestRequest request = new RestRequest(Route, Method.POST) { RequestFormat = DataFormat.Json };
+            RestRequest request = new(Route, Method.POST)
+            {
+                RequestFormat = DataFormat.Json
+            };
 
             string json = JsonConvert.SerializeObject(entity);
             request.AddParameter("application/json", json, ParameterType.RequestBody);
 
-            var response = await Client.ExecuteAsync<T>(request).ConfigureAwait(false);
+            IRestResponse<T> response = await Client.ExecuteAsync<T>(request, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode != HttpStatusCode.OK &&
                 response.StatusCode != HttpStatusCode.Created)
@@ -48,13 +52,13 @@ namespace LionLibrary
             return response;
         }
 
-        public virtual async IAsyncEnumerable<IRestResponse<T>> PostAsync<T>(IEnumerable<T> entities)
+        public virtual async IAsyncEnumerable<IRestResponse<T>> PostAsync<T>(IEnumerable<T> entities, [EnumeratorCancellation] CancellationToken cancellationToken = default)
             where T : IEntity<EntityT, KeyT>
         {
-            var tasks = new Queue<Task<IRestResponse<T>>>(MAX_BULK_POST);
+            Queue<Task<IRestResponse<T>>> tasks = new(MAX_BULK_POST);
             foreach (var entity in entities)
             {
-                tasks.Enqueue(PostAsync(entity));
+                tasks.Enqueue(PostAsync(entity, cancellationToken));
 
                 if (tasks.Count >= MAX_BULK_POST)
                 {
@@ -71,64 +75,65 @@ namespace LionLibrary
 
         public virtual Task<EntityResult<EntityT>> GetAsync(
             KeyT id,
-            IDictionary<KeyT, EntityT>? cache = null, 
+            IDictionary<KeyT, EntityT>? cache = null,
             Action<EntityT>? initFunc = null,
-            CancellationToken cancelToken = default) => 
-            GetAsync<EntityT>(id, cache, initFunc, cancelToken);
+            CancellationToken cancellationToken = default) =>
+                GetAsync<EntityT>(id, cache, initFunc, cancellationToken);
 
         public virtual async Task<EntityResult<DerivedEntityT>> GetAsync<DerivedEntityT>(
             KeyT id,
-            IDictionary<KeyT, DerivedEntityT>? cache = null, 
+            IDictionary<KeyT, DerivedEntityT>? cache = null,
             Action<DerivedEntityT>? initFunc = null,
-            CancellationToken cancelToken = default)
-            where DerivedEntityT : class, IEntity<EntityT, KeyT>
+            CancellationToken cancellationToken = default)
+                where DerivedEntityT : class, IEntity<EntityT, KeyT>
         {
+            EntityResult<DerivedEntityT> entityResult;
+
             while (cache != null)
             {
-                if(cancelToken != default)
+                if (cancellationToken != default && cancellationToken.IsCancellationRequested)
                 {
-                    if(cancelToken.IsCancellationRequested)
-                    {
-                        return new EntityResult<DerivedEntityT>(default, default);
-                    }
+                    entityResult = new (default, default);
+                    return entityResult;
                 }
 
                 try
                 {
                     if (cache.ContainsKey(id))
                     {
-                        return new EntityResult<DerivedEntityT>(default, cache[id]);
+                        entityResult = new (default, cache[id]); ;
+                        return entityResult;
                     }
                 }
                 catch { }
 
                 await Task.Delay(1);
-                //sw.SpinOnce();
             }
 
             CreateGetRequest();
-            RestRequest request = new RestRequest($"{Route}/{id}", Method.GET);
+            RestRequest request = new($"{Route}/{id}", Method.GET);
 
-            IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
+            IRestResponse response = await Client.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                var entity = JsonConvert.DeserializeObject<DerivedEntityT>(response.Content);
+                DerivedEntityT entity = JsonConvert.DeserializeObject<DerivedEntityT>(response.Content);
                 initFunc?.Invoke(entity);
-                return new EntityResult<DerivedEntityT>(response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
+                entityResult = new(response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
             }
             else
             {
-                Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
-                return new EntityResult<DerivedEntityT>(default, default);
+                Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})", cancellationToken);
+                entityResult = new(default, default);
             }
+            return entityResult;
         }
 
         public virtual async Task<PaginatedList<EntityT, KeyT>> GetAsync(
             ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> req,
             IEnumerable<Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>>? reqExtras = null,
             int? page = null,
-            CancellationToken cancelToken = default)
+            CancellationToken cancellationToken = default)
         {
             if (reqExtras != null)
             {
@@ -145,7 +150,7 @@ namespace LionLibrary
                 request.AddParameter("page", page.Value);
             }
 
-            IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
+            IRestResponse response = await Client.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -162,7 +167,7 @@ namespace LionLibrary
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? action = null,
             IEnumerable<Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>>? reqExtras = null,
             int? page = null,
-            CancellationToken cancelToken = default)
+            CancellationToken cancellationToken = default)
         {
             var req = CreateGetRequest();
             action?.Invoke(req);
@@ -182,7 +187,7 @@ namespace LionLibrary
                 request.AddParameter("page", page.Value);
             }
 
-            IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
+            IRestResponse response = await Client.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -197,12 +202,12 @@ namespace LionLibrary
 
         public virtual async Task<EntityResult<DerivedEntityT>> GetAsyncWithRest<DerivedEntityT>(
             KeyT id,
-            IDictionary<KeyT, DerivedEntityT>? cache = null, 
+            IDictionary<KeyT, DerivedEntityT>? cache = null,
             Action<DerivedEntityT>? initFunc = null,
-            CancellationToken cancelToken = default)
+            CancellationToken cancellationToken = default)
                 where DerivedEntityT : RestEntity<EntityT, KeyT>, IEntity<EntityT, KeyT>
         {
-            var result = await GetAsync(id, cache, initFunc, cancelToken).ConfigureAwait(false);
+            var result = await GetAsync(id, cache, initFunc, cancellationToken).ConfigureAwait(false);
             if (result.Entity != null)
             {
                 result.Entity.ConnectorService = ConnectorService;
@@ -212,18 +217,21 @@ namespace LionLibrary
             return result;
         }
 
-        public virtual Task<IRestResponse> PutAsync<T>(T entity)
-            where T : IEntity<EntityT, KeyT>
-            => PutAsync(entity.Id, entity);
+        public virtual Task<IRestResponse> PutAsync<T>(T entity, CancellationToken cancellationToken = default)
+            where T : IEntity<EntityT, KeyT> => 
+                PutAsync(entity.Id, entity, cancellationToken);
 
-        public virtual async Task<IRestResponse> PutAsync<T>(KeyT key, T entity)
+        public virtual async Task<IRestResponse> PutAsync<T>(KeyT key, T entity, CancellationToken cancellationToken = default)
             where T : IEntity<EntityT, KeyT>
         {
-            RestRequest request = new RestRequest($"{Route}/{key}", Method.PUT) { RequestFormat = DataFormat.Json };
+            RestRequest request = new($"{Route}/{key}", Method.PUT) 
+            { 
+                RequestFormat = DataFormat.Json 
+            };
             string json = JsonConvert.SerializeObject(entity);
             request.AddParameter("application/json", json, ParameterType.RequestBody);
 
-            var response = await Client.ExecuteAsync(request).ConfigureAwait(false);
+            var response = await Client.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode != HttpStatusCode.NoContent)
             {
@@ -233,16 +241,14 @@ namespace LionLibrary
             return response;
         }
 
-        public virtual Task<IRestResponse> DeleteAsync(IEntity<EntityT, KeyT> entity)
-        {
-            return DeleteAsync(entity.Id);
-        }
+        public virtual Task<IRestResponse> DeleteAsync(IEntity<EntityT, KeyT> entity, CancellationToken cancellationToken = default) =>
+            DeleteAsync(entity.Id, cancellationToken);
 
-        public virtual async Task<IRestResponse> DeleteAsync(KeyT entityKey)
+        public virtual async Task<IRestResponse> DeleteAsync(KeyT entityKey, CancellationToken cancellationToken = default)
         {
-            RestRequest request = new RestRequest($"{Route}/{entityKey}", Method.DELETE);
+            RestRequest request = new($"{Route}/{entityKey}", Method.DELETE);
 
-            var response = await Client.ExecuteAsync(request).ConfigureAwait(false);
+            var response = await Client.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode != HttpStatusCode.OK)
             {
@@ -253,6 +259,6 @@ namespace LionLibrary
         }
 
         public virtual ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>> CreateGetRequest(string? customRoute = null) =>
-            new ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>(this, new RestRequest(customRoute ?? Route, Method.GET, DataFormat.Json));
+            new(this, new RestRequest(customRoute ?? Route, Method.GET, DataFormat.Json));
     }
 }

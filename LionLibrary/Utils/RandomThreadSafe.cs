@@ -1,35 +1,33 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LionLibrary.Utils
 {
-    public class RandomThreadSafe
+    public static class RandomThreadSafe
     {
-        private static readonly Random _global = new Random();
+        private static readonly Random _global = new();
 
         [ThreadStatic]
         private static Random? _local;
 
-        public int Next()
+        public static int Next()
         {
             EnsureThreadStaticRandomCreated();
             return _local!.Next();
         }
 
-        public int Next(int maxValue)
+        public static int Next(int maxValue)
         {
             EnsureThreadStaticRandomCreated();
             return _local!.Next(maxValue);
         }
 
-        public int Next(int minValue, int maxValue)
+        public static int Next(int minValue, int maxValue)
         {
             EnsureThreadStaticRandomCreated();
             return _local!.Next(minValue, maxValue);
         }
 
-        private void EnsureThreadStaticRandomCreated()
+        private static void EnsureThreadStaticRandomCreated()
         {
             if (_local == null)
             {

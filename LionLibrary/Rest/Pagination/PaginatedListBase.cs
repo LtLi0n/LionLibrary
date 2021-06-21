@@ -11,7 +11,7 @@ namespace LionLibrary
     public abstract class PaginatedListBase<EntityT, KeyT> : 
         IPaginatedList<EntityT, KeyT>
         where EntityT : class, IEntity<EntityT, KeyT>
-        where KeyT : notnull, IEquatable<KeyT>, IComparable
+        where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
     {
         [DataMember]
         public IEnumerable<EntityT> Entities { get; protected set; }
@@ -43,10 +43,7 @@ namespace LionLibrary
 
         protected PaginatedListBase()
         {
-            Entities = Enumerable.Empty<EntityT>();
-            Count = 0;
-            PageIndex = 1;
-            TotalPages = 1;
+            Initialize();
         }
 
         protected PaginatedListBase(IEnumerable<EntityT> items, int count, int pageIndex, int pageSize)
@@ -55,11 +52,19 @@ namespace LionLibrary
             Count = count;
             PageIndex = pageIndex;
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
-            
+
             if (TotalPages == 0)
             {
                 TotalPages = 1;
             }
+        }
+
+        protected void Initialize()
+        {
+            Entities = Enumerable.Empty<EntityT>();
+            Count = 0;
+            PageIndex = 1;
+            TotalPages = 1;
         }
 
         public async Task PullCurrentPageAsync(
@@ -78,8 +83,9 @@ namespace LionLibrary
             try
             {
                 EntityDownloadStart?.Invoke(this, new EventArgs());
-                IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(connector, config, page, CancellationTokenSource.Token)
-                    .ConfigureAwait(false);
+
+                IPaginatedList<EntityT, KeyT>? paginator = await GetPaginatorAsync(
+                    connector, config, page, CancellationTokenSource.Token).ConfigureAwait(false);
 
                 await UpdatePaginatorAsync(paginator).ConfigureAwait(false);
                 EntityDownloadFinish?.Invoke(this, new EventArgs());
@@ -132,10 +138,7 @@ namespace LionLibrary
             }
             else
             {
-                Entities = Enumerable.Empty<EntityT>();
-                PageIndex = 1;
-                Count = 0;
-                TotalPages = 1;
+                Initialize();
             }
 
             if(PageUpdateTask != null)

@@ -9,8 +9,8 @@ namespace LionLibrary
         public static RestEntity<EntityT, KeyT>? AssignRest<EntityT, KeyT>(
             this RestEntity<EntityT, KeyT>? entity,
             ApiConnectorCRUDBase<EntityT, KeyT> conn)
-            where EntityT : class, IEntity<EntityT, KeyT>
-            where KeyT : IEquatable<KeyT>, IComparable
+                where EntityT : class, IEntity<EntityT, KeyT>
+                where KeyT : IEquatable<KeyT>, IComparable, new()
         {
             if (entity != null)
             {
@@ -23,8 +23,8 @@ namespace LionLibrary
         public static IEnumerable<RestEntity<EntityT, KeyT>>? AssignRest<EntityT, KeyT>(
             this IEnumerable<RestEntity<EntityT, KeyT>>? entities,
             ApiConnectorCRUDBase<EntityT, KeyT> conn)
-            where EntityT : class, IEntity<EntityT, KeyT>
-            where KeyT : IEquatable<KeyT>, IComparable
+                where EntityT : class, IEntity<EntityT, KeyT>
+                where KeyT : IEquatable<KeyT>, IComparable, new()
         {
             if (entities != null)
             {

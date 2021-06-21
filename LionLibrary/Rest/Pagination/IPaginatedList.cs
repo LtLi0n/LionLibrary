@@ -5,7 +5,7 @@ namespace LionLibrary
 {
     public interface IPaginatedList<EntityT, KeyT>
         where EntityT : class, IEntity<EntityT, KeyT>
-        where KeyT : notnull, IEquatable<KeyT>, IComparable
+        where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
     {
         IEnumerable<EntityT> Entities { get; }
         int Count { get; }
