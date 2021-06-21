@@ -11,26 +11,18 @@ using System.Threading.Tasks;
 namespace LionLibrary
 {
     [DataContract]
-<<<<<<< HEAD
-    public abstract class RestEntity<EntityT, KeyT> : IEntity<EntityT, KeyT>
-        where EntityT : class, IEntity<EntityT, KeyT>
-        where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
-=======
     public abstract class RestEntity<EntityT, KeyT> : 
         IEntity<EntityT, KeyT>, 
         IComparable<RestEntity<EntityT, KeyT>>,
         IEquatable<RestEntity<EntityT, KeyT>>
             where EntityT : class, IEntity<EntityT, KeyT>
-            where KeyT : notnull, IEquatable<KeyT>, IComparable
->>>>>>> 8ad56222f39897a8f82b44be0bd26009eedec5b3
+            where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
     {
         public ConnectorServiceBase? ConnectorService { get; set; }
         public ApiConnectorCRUDBase<EntityT, KeyT>? ConnectorCRUD { get; set; }
 
         [DataMember]
-#pragma warning disable CS8653 // If used If used with a serializer, this should never be null.
         public KeyT Id { get; set; } = new();
-#pragma warning restore CS8653 // If used If used with a serializer, this should never be null.
 
         public T GetConnector<T>()
             where T : ApiConnectorBase =>
@@ -48,22 +40,22 @@ namespace LionLibrary
         }
 
         public Task<IRestResponse> PutAsync(CancellationToken cancellationToken) => 
-            GetConnector(false)!.PutAsync(this);
+            GetConnector(false)!.PutAsync(this, cancellationToken);
         
         public Task<IRestResponse<RestEntity<EntityT, KeyT>>> PostAsync(CancellationToken cancellationToken) => 
-            GetConnector(false)!.PostAsync(this);
+            GetConnector(false)!.PostAsync(this, cancellationToken);
         
         public Task<IRestResponse> DeleteAsync(CancellationToken cancellationToken) => 
-            GetConnector(false)!.DeleteAsync(Id);
+            GetConnector(false)!.DeleteAsync(Id, cancellationToken);
 
         public Task<IRestResponse>? TryPutAsync(CancellationToken cancellationToken) => 
-            GetConnector(true)?.PutAsync(this);
+            GetConnector(true)?.PutAsync(this, cancellationToken);
         
         public Task<IRestResponse<RestEntity<EntityT, KeyT>>>? TryPostAsync(CancellationToken cancellationToken) => 
-            GetConnector(true)?.PostAsync(this);
+            GetConnector(true)?.PostAsync(this, cancellationToken);
         
         public Task<IRestResponse>? TryDeleteAsync(CancellationToken cancellationToken) => 
-            GetConnector(true)?.DeleteAsync(Id);
+            GetConnector(true)?.DeleteAsync(Id, cancellationToken);
 
         ///<summary> Assign property values containing <see cref="DataMemberAttribute"/> attributes from the supplied entity. </summary>
         public void UpdateFrom(RestEntity<EntityT, KeyT> other)

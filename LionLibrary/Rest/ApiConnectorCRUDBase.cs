@@ -87,93 +87,52 @@ namespace LionLibrary
             CancellationToken cancellationToken = default)
                 where DerivedEntityT : class, IEntity<EntityT, KeyT>
         {
-<<<<<<< HEAD
             EntityResult<DerivedEntityT> entityResult;
 
-            while (cache != null)
-            {
-                if (cancellationToken != default && cancellationToken.IsCancellationRequested)
-                {
-                    entityResult = new (default, default);
-                    return entityResult;
-=======
-            if(cache == null)
+            if (cache == null)
             {
                 CreateGetRequest();
-                RestRequest request = new RestRequest($"{Route}/{id}", Method.GET);
+                RestRequest request = new($"{Route}/{id}", Method.GET);
 
-                IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
+                IRestResponse response = await Client.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
                     var entity = JsonConvert.DeserializeObject<DerivedEntityT>(response.Content);
                     initFunc?.Invoke(entity);
-                    return new EntityResult<DerivedEntityT>(response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
->>>>>>> 8ad56222f39897a8f82b44be0bd26009eedec5b3
+                    entityResult = new (response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
                 }
                 else
                 {
-<<<<<<< HEAD
-                    if (cache.ContainsKey(id))
-                    {
-                        entityResult = new (default, cache[id]); ;
-                        return entityResult;
-                    }
-                }
-                catch { }
-
-                await Task.Delay(1);
-=======
                     Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
-                    return new EntityResult<DerivedEntityT>(default, default);
+                    entityResult = new (default, default);
                 }
->>>>>>> 8ad56222f39897a8f82b44be0bd26009eedec5b3
             }
             else
             {
                 while (cache != null)
                 {
-                    if (cancelToken != default)
+                    if (cancellationToken != default && cancellationToken.IsCancellationRequested)
                     {
-                        if (cancelToken.IsCancellationRequested)
-                        {
-                            return new EntityResult<DerivedEntityT>(default, default);
-                        }
+                        entityResult = new (default, default);
+                        return entityResult;
                     }
 
-<<<<<<< HEAD
-            CreateGetRequest();
-            RestRequest request = new($"{Route}/{id}", Method.GET);
-
-            IRestResponse response = await Client.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
-
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                DerivedEntityT entity = JsonConvert.DeserializeObject<DerivedEntityT>(response.Content);
-                initFunc?.Invoke(entity);
-                entityResult = new(response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
-            }
-            else
-            {
-                Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})", cancellationToken);
-                entityResult = new(default, default);
-=======
                     try
                     {
                         if (cache.ContainsKey(id))
                         {
-                            return new EntityResult<DerivedEntityT>(default, cache[id]);
+                            entityResult = new(default, cache[id]);
+                            return entityResult;
                         }
                     }
                     catch { }
 
                     await Task.Delay(1);
-                    //sw.SpinOnce();
                 }
 
                 Logger?.Error($"Failed to obtain object from the cache.");
-                return new EntityResult<DerivedEntityT>(default, default);
->>>>>>> 8ad56222f39897a8f82b44be0bd26009eedec5b3
+                entityResult = new(default, default);
             }
             return entityResult;
         }
@@ -267,15 +226,15 @@ namespace LionLibrary
         }
 
         public virtual Task<IRestResponse> PutAsync<T>(T entity, CancellationToken cancellationToken = default)
-            where T : IEntity<EntityT, KeyT> => 
+            where T : IEntity<EntityT, KeyT> =>
                 PutAsync(entity.Id, entity, cancellationToken);
 
         public virtual async Task<IRestResponse> PutAsync<T>(KeyT key, T entity, CancellationToken cancellationToken = default)
             where T : IEntity<EntityT, KeyT>
         {
-            RestRequest request = new($"{Route}/{key}", Method.PUT) 
-            { 
-                RequestFormat = DataFormat.Json 
+            RestRequest request = new($"{Route}/{key}", Method.PUT)
+            {
+                RequestFormat = DataFormat.Json
             };
             string json = JsonConvert.SerializeObject(entity);
             request.AddParameter("application/json", json, ParameterType.RequestBody);
