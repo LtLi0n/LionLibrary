@@ -118,17 +118,13 @@ namespace LionLibrary
                         return entityResult;
                     }
 
-                    try
+                    if (cache.ContainsKey(id))
                     {
-                        if (cache.ContainsKey(id))
-                        {
-                            entityResult = new(default, cache[id]);
-                            return entityResult;
-                        }
+                        entityResult = new(default, cache[id]);
+                        return entityResult;
                     }
-                    catch { }
 
-                    await Task.Delay(1);
+                    await Task.Delay(1).ConfigureAwait(false);
                 }
 
                 Logger?.Error($"Failed to obtain object from the cache.");

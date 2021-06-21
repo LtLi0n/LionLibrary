@@ -39,22 +39,22 @@ namespace LionLibrary
             ConnectorCRUD = connectorCrud;
         }
 
-        public Task<IRestResponse> PutAsync(CancellationToken cancellationToken) => 
+        public Task<IRestResponse> PutAsync(CancellationToken cancellationToken = default) => 
             GetConnector(false)!.PutAsync(this, cancellationToken);
         
-        public Task<IRestResponse<RestEntity<EntityT, KeyT>>> PostAsync(CancellationToken cancellationToken) => 
+        public Task<IRestResponse<RestEntity<EntityT, KeyT>>> PostAsync(CancellationToken cancellationToken = default) => 
             GetConnector(false)!.PostAsync(this, cancellationToken);
         
-        public Task<IRestResponse> DeleteAsync(CancellationToken cancellationToken) => 
+        public Task<IRestResponse> DeleteAsync(CancellationToken cancellationToken = default) => 
             GetConnector(false)!.DeleteAsync(Id, cancellationToken);
 
-        public Task<IRestResponse>? TryPutAsync(CancellationToken cancellationToken) => 
+        public Task<IRestResponse>? TryPutAsync(CancellationToken cancellationToken = default) => 
             GetConnector(true)?.PutAsync(this, cancellationToken);
         
-        public Task<IRestResponse<RestEntity<EntityT, KeyT>>>? TryPostAsync(CancellationToken cancellationToken) => 
+        public Task<IRestResponse<RestEntity<EntityT, KeyT>>>? TryPostAsync(CancellationToken cancellationToken = default) => 
             GetConnector(true)?.PostAsync(this, cancellationToken);
         
-        public Task<IRestResponse>? TryDeleteAsync(CancellationToken cancellationToken) => 
+        public Task<IRestResponse>? TryDeleteAsync(CancellationToken cancellationToken = default) => 
             GetConnector(true)?.DeleteAsync(Id, cancellationToken);
 
         ///<summary> Assign property values containing <see cref="DataMemberAttribute"/> attributes from the supplied entity. </summary>
@@ -101,14 +101,13 @@ namespace LionLibrary
                 return false;
             }
 
-            RestEntity<EntityT, KeyT>? entity = obj as RestEntity<EntityT, KeyT>;
-            if(entity == null)
+            if(obj is RestEntity<EntityT, KeyT> entity)
             {
-                return false;
+                return Equals(entity);
             }
             else
             {
-                return Equals(entity);
+                return false;
             }
         }
 

@@ -67,10 +67,10 @@ namespace LionLibrary
             TotalPages = 1;
         }
 
-        public async Task PullCurrentPageAsync(
+        public Task PullCurrentPageAsync(
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null) =>
-                await PullPageAsync(PageIndex, connector, config).ConfigureAwait(false);
+            PullPageAsync(PageIndex, connector, config);
 
         protected async Task PullPageAsync(
             int page,
@@ -151,6 +151,6 @@ namespace LionLibrary
             ApiConnectorCRUDBase<EntityT, KeyT> connector,
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null,
             int? page = null,
-            CancellationToken cancelToken = default);
+            CancellationToken cancellationToken = default);
     }
 }
