@@ -87,6 +87,7 @@ namespace LionLibrary
             CancellationToken cancellationToken = default)
                 where DerivedEntityT : class, IEntity<EntityT, KeyT>
         {
+<<<<<<< HEAD
             EntityResult<DerivedEntityT> entityResult;
 
             while (cache != null)
@@ -95,10 +96,24 @@ namespace LionLibrary
                 {
                     entityResult = new (default, default);
                     return entityResult;
-                }
+=======
+            if(cache == null)
+            {
+                CreateGetRequest();
+                RestRequest request = new RestRequest($"{Route}/{id}", Method.GET);
 
-                try
+                IRestResponse response = await Client.ExecuteAsync(request, cancelToken).ConfigureAwait(false);
+
+                if (response.StatusCode == HttpStatusCode.OK)
                 {
+                    var entity = JsonConvert.DeserializeObject<DerivedEntityT>(response.Content);
+                    initFunc?.Invoke(entity);
+                    return new EntityResult<DerivedEntityT>(response, JsonConvert.DeserializeObject<DerivedEntityT>(response.Content));
+>>>>>>> 8ad56222f39897a8f82b44be0bd26009eedec5b3
+                }
+                else
+                {
+<<<<<<< HEAD
                     if (cache.ContainsKey(id))
                     {
                         entityResult = new (default, cache[id]); ;
@@ -108,8 +123,25 @@ namespace LionLibrary
                 catch { }
 
                 await Task.Delay(1);
+=======
+                    Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})");
+                    return new EntityResult<DerivedEntityT>(default, default);
+                }
+>>>>>>> 8ad56222f39897a8f82b44be0bd26009eedec5b3
             }
+            else
+            {
+                while (cache != null)
+                {
+                    if (cancelToken != default)
+                    {
+                        if (cancelToken.IsCancellationRequested)
+                        {
+                            return new EntityResult<DerivedEntityT>(default, default);
+                        }
+                    }
 
+<<<<<<< HEAD
             CreateGetRequest();
             RestRequest request = new($"{Route}/{id}", Method.GET);
 
@@ -125,6 +157,23 @@ namespace LionLibrary
             {
                 Logger?.Error($"Failed GET request: {response.StatusCode} ({response.StatusDescription})", cancellationToken);
                 entityResult = new(default, default);
+=======
+                    try
+                    {
+                        if (cache.ContainsKey(id))
+                        {
+                            return new EntityResult<DerivedEntityT>(default, cache[id]);
+                        }
+                    }
+                    catch { }
+
+                    await Task.Delay(1);
+                    //sw.SpinOnce();
+                }
+
+                Logger?.Error($"Failed to obtain object from the cache.");
+                return new EntityResult<DerivedEntityT>(default, default);
+>>>>>>> 8ad56222f39897a8f82b44be0bd26009eedec5b3
             }
             return entityResult;
         }
