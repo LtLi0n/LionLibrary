@@ -4,11 +4,45 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Threading;
+using System.Reflection;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace LionLibrary
 {
     public static class DbContextExtensions
     {
+        private static readonly MethodInfo ContainsMethod = typeof(Enumerable).GetMethods()
+            .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
+            .MakeGenericMethod(typeof(object));
+
+        public static Task<T[]> FindAllAsync<T>(this DbContext dbContext, IEnumerable<object> keyValues)
+            where T : class
+        {
+            var entityType = dbContext.Model.FindEntityType(typeof(T));
+            var primaryKey = entityType.FindPrimaryKey();
+            if (primaryKey.Properties.Count != 1)
+                throw new NotSupportedException("Only a single primary key is supported");
+
+            var pkProperty = primaryKey.Properties[0];
+            var pkPropertyType = pkProperty.ClrType;
+
+            // retrieve member info for primary key
+            var pkMemberInfo = typeof(T).GetProperty(pkProperty.Name);
+            if (pkMemberInfo == null)
+                throw new ArgumentException("Type does not contain the primary key as an accessible property");
+
+            // build lambda expression
+            var parameter = Expression.Parameter(typeof(T), "e");
+            var body = Expression.Call(null, ContainsMethod,
+                Expression.Constant(keyValues),
+                Expression.Convert(Expression.MakeMemberAccess(parameter, pkMemberInfo), typeof(object)));
+            var predicateExpression = Expression.Lambda<Func<T, bool>>(body, parameter);
+
+            // run query
+            return dbContext.Set<T>().Where(predicateExpression).ToArrayAsync();
+        }
+
         public static async Task<KeyT> AddEntityAsync<EntityT, KeyT>(this DbContext context, IEntity<EntityT, KeyT> entity, DbSet<EntityT>? db_set = null, CancellationToken cancellationToken = default)
             where EntityT : class, IEntity<EntityT, KeyT>
             where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
