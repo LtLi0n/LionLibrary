@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -9,7 +10,7 @@ namespace LionLibrary
 {
     [DataContract]
     public abstract class PaginatedListBase<EntityT, KeyT> : 
-        IPaginatedList<EntityT, KeyT>
+        IPaginatedList<EntityT, KeyT>, IEnumerable<EntityT>
         where EntityT : class, IEntity<EntityT, KeyT>
         where KeyT : notnull, IEquatable<KeyT>, IComparable, new()
     {
@@ -43,6 +44,7 @@ namespace LionLibrary
 
         protected PaginatedListBase()
         {
+            Entities = Enumerable.Empty<EntityT>();
             Initialize();
         }
 
@@ -152,5 +154,11 @@ namespace LionLibrary
             Action<ConnectorRequest_GET<ApiConnectorCRUDBase<EntityT, KeyT>>>? config = null,
             int? page = null,
             CancellationToken cancellationToken = default);
+
+        public IEnumerator<EntityT> GetEnumerator() =>
+            Entities.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() =>
+            Entities.GetEnumerator();
     }
 }

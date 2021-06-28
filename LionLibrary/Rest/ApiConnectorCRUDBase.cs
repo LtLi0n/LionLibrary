@@ -118,9 +118,9 @@ namespace LionLibrary
                         return entityResult;
                     }
 
-                    if (cache.ContainsKey(id))
+                    if (cache.TryGetValue(id, out var obtained))
                     {
-                        entityResult = new(default, cache[id]);
+                        entityResult = new(default, obtained);
                         return entityResult;
                     }
 
