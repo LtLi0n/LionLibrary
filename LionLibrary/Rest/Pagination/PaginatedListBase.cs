@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LionLibrary
 {
-    [DataContract]
+    [DataContract, JsonObject]
     public abstract class PaginatedListBase<EntityT, KeyT> : 
         IPaginatedList<EntityT, KeyT>, IEnumerable<EntityT>
         where EntityT : class, IEntity<EntityT, KeyT>
@@ -29,14 +30,13 @@ namespace LionLibrary
         public bool HasPreviousPage => PageIndex > 1;
         public bool HasNextPage => PageIndex < TotalPages;
 
-
         public event EventHandler? EntityDownloadStart;
         public event EventHandler? EntityDownloadFinish;
 
-        ///<summary>Get raised before the contents of the paginator are changed</summary>
+        ///<summary>Gets raised before the contents of the paginator are changed</summary>
         protected Func<PaginatorUpdateEventArgs<EntityT, KeyT>, Task>? PrePageUpdateTask { get; set; }
 
-        ///<summary>Get raised when the contents of the paginator are changed</summary>
+        ///<summary>Gets raised when the contents of the paginator are changed</summary>
         protected Func<PaginatorUpdateEventArgs<EntityT, KeyT>, Task>? PageUpdateTask { get; set; }
 
         public CancellationTokenSource CancellationTokenSource { get; private set; } = 
